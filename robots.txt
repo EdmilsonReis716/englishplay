@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://edmilsonreis716.github.io/EnglishPlay/sitemap.xml
