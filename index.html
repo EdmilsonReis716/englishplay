@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>EnglishPlay — Início</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="logo">EnglishPlay</div>
+  <nav class="nav">
+    <a href="index.html">Início</a>
+    <a href="lesson1.html">Aula 1</a>
+    <a href="lesson2.html">Aula 2</a>
+    <a href="profile.html">Perfil</a>
+  </nav>
+</header>
+
+<main class="container">
+  <section id="questionario" class="card">
+    <h2>Antes de começar...</h2>
+    <form id="quizForm">
+      <label>Email</label><input id="q-email" type="email" required>
+      <label>Nome</label><input id="q-name" type="text" required>
+      <label>Idade</label><input id="q-age" type="number" min="5" required>
+      <label>Meta de dias (ofensiva)</label><input id="q-target" type="number" min="1" value="7" required>
+      <label>Por que quer usar o EnglishPlay?</label><input id="q-reason" type="text" required>
+      <label>Como ficou sabendo do EnglishPlay?</label><input id="q-source" type="text" required>
+      <div style="text-align:right;margin-top:12px;"><button class="btn" type="submit">Começar</button></div>
+    </form>
+  </section>
+
+  <section id="mainMenu" class="card" style="display:none;">
+    <h2>Olá, <span id="userName">Amigo</span> 👋</h2>
+    <div class="streak">
+      <div>Meta diária: <strong id="dailyTarget">—</strong></div>
+      <div class="chama" id="dailyFlame" title="Streak diário">🔥</div>
+    </div>
+    <div class="lessons-grid">
+      <div class="lesson-card">
+        <h3>Aula 1 — Saudações</h3>
+        <p>Primeira aula gratuita — vocabulário e quiz.</p>
+        <a class="btn" href="lesson1.html">Abrir Aula 1</a>
+      </div>
+      <div class="lesson-card">
+        <h3>Aula 2 — Apresentações</h3>
+        <p>Frases para se apresentar.</p>
+        <a class="btn" href="lesson2.html">Abrir Aula 2</a>
+      </div>
+      <div class="lesson-card locked">
+        <h3>Aula 3 — Verb to be</h3>
+        <p>Requer assinatura.</p>
+        <button class="btn disabled">Bloqueado</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;"><a class="btn" href="profile.html">Ver Perfil</a></div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  © 2025 EnglishPlay — Aprenda inglês de forma divertida
+</footer>
+
+<script>
+function getUser(){ try{ return JSON.parse(localStorage.getItem('ep_user')||'null'); }catch(e){return null;} }
+function setUser(u){ localStorage.setItem('ep_user', JSON.stringify(u)); }
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const form = document.getElementById('quizForm');
+  const qmodal = document.getElementById('questionario');
+  const mainMenu = document.getElementById('mainMenu');
+  const nameSpan = document.getElementById('userName');
+  const dailyTarget = document.getElementById('dailyTarget');
+  const flame = document.getElementById('dailyFlame');
+
+  const user = getUser();
+  if(user){
+    qmodal.style.display='none';
+    mainMenu.style.display='block';
+    nameSpan.textContent = user.name;
+    dailyTarget.textContent = (user.target||7)+' dias';
+    const doneToday = localStorage.getItem('ep_done_'+(new Date()).toDateString());
+    if(doneToday) flame.style.boxShadow='0 8px 26px rgba(96,165,250,0.5)';
+  } else {
+    qmodal.style.display='block';
+    mainMenu.style.display='none';
+  }
+
+  form.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const u = {
+      email: document.getElementById('q-email').value.trim(),
+      name: document.getElementById('q-name').value.trim(),
+      age: document.getElementById('q-age').value.trim(),
+      target: Number(document.getElementById('q-target').value) || 7,
+      reason: document.getElementById('q-reason').value.trim(),
+      source: document.getElementById('q-source').value.trim(),
+      score:0, streak:0, joined: Date.now()
+    };
+    setUser(u);
+    qmodal.style.display='none';
+    mainMenu.style.display='block';
+    nameSpan.textContent = u.name;
+    dailyTarget.textContent = u.target + ' dias';
+  });
+});
+</script>
+</body>
+</html>
