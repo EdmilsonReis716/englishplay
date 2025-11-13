@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>EnglishPlay — Aula 2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header"><div class="logo">EnglishPlay — Aula 2</div><nav class="nav"><a href="index.html">Início</a><a href="lesson1.html">Aula 1</a><a href="profile.html">Perfil</a></nav></header>
+<main class="container">
+  <section class="card">
+    <h2>Aula 2 — Apresentações</h2>
+    <div id="lessonArea">
+      <p>Ouça e repita: <strong>Where are you from?</strong></p>
+      <button id="play1" class="btn">Ouvir</button>
+      <p style="margin-top:12px">Escolha a tradução:</p>
+      <button class="btn opt" data-c="0">De onde você é?</button>
+      <button class="btn opt" data-c="1">Como você está?</button>
+      <button class="btn opt" data-c="2">Onde você mora?</button>
+      <div style="margin-top:12px">Pontuação nesta aula: <span id="sc2">0</span></div>
+    </div>
+  </section>
+</main>
+<script>
+document.getElementById('play1').addEventListener('click', ()=>{ try{ const u=new SpeechSynthesisUtterance('Where are you from?'); u.lang='en-US'; speechSynthesis.speak(u);}catch(e){} });
+document.querySelectorAll('.opt').forEach(b=> b.addEventListener('click', ()=>{ const c=Number(b.getAttribute('data-c')); if(c===0){ playCorrect(); document.getElementById('sc2').textContent = Number(document.getElementById('sc2').textContent||0)+15; } else { playWrong(); } }));
+function playCorrect(){ try{ new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_ee19b5c9b7.mp3?filename=trumpet-6058.mp3').play(); confetti(); }catch(e){} }
+function playWrong(){ try{ new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_7b35a46b3c.mp3?filename=incorrect-answer-6268.mp3').play(); sparks(); }catch(e){} }
+function confetti(){ for(let i=0;i<50;i++){ const p=document.createElement('div'); p.style.position='fixed'; p.style.left=(Math.random()*100)+'%'; p.style.top='20%'; p.style.width='8px'; p.style.height='8px'; p.style.background=(i%2? '#7ee787':'#60a5fa'); document.body.appendChild(p); setTimeout(()=>p.remove(),1600); } }
+function sparks(){ for(let i=0;i<30;i++){ const p=document.createElement('div'); p.style.position='fixed'; p.style.left=(50+ (Math.random()-0.5)*20)+'%'; p.style.top=(50+ (Math.random()-0.5)*20)+'%'; p.style.width='6px'; p.style.height='6px'; p.style.background='#ff5b5b'; document.body.appendChild(p); setTimeout(()=>p.remove(),1200); } }
+</script>
+</body>
+</html>

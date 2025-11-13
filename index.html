@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>EnglishPlay — Início</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="site-header"><div class="logo">EnglishPlay</div><nav class="nav"><a href="index.html">Início</a><a href="lesson1.html">Aula 1</a><a href="lesson2.html">Aula 2</a><a href="profile.html">Perfil</a></nav></header>
+<main class="container">
+  <section id="questionario" class="card">
+    <h2 class="huge">Antes de começar...</h2>
+    <form id="quizForm">
+      <div class="form-row"><input id="q-email" class="input" type="email" placeholder="Email" required><input id="q-name" class="input" type="text" placeholder="Nome" required></div>
+      <div class="form-row"><input id="q-age" class="input" type="number" placeholder="Idade" min="5" required><input id="q-target" class="input" type="number" placeholder="Meta de dias (ex:7)" value="7" required></div>
+      <div class="form-row"><input id="q-reason" class="input" type="text" placeholder="Por que quer aprender inglês?" required></div>
+      <div class="form-row"><input id="q-source" class="input" type="text" placeholder="Como ficou sabendo do EnglishPlay?" required></div>
+      <div style="text-align:right;margin-top:12px;"><button class="btn" type="submit">Começar</button></div>
+    </form>
+  </section>
+
+  <section id="mainMenu" class="card" style="display:none;">
+    <h2>Olá, <span id="userName">Amigo</span> 👋</h2>
+    <div class="streak"><div>Meta diária: <strong id="dailyTarget">—</strong></div><div class="chama" id="dailyFlame">🔥</div></div>
+    <div class="personagens"><div class="char"><img src="srtv.png" alt="Sr TV"><div class="small">Sr. TV</div></div><div class="char"><img src="emma.png" alt="Emma"><div class="small">Emma</div></div><div class="char"><img src="jake.png" alt="Jake"><div class="small">Jake</div></div></div>
+    <div class="lessons-grid"><div class="lesson-card"><h3>Aula 1 — Saudações</h3><p class="small">Grátis</p><a class="btn" href="lesson1.html">Abrir Aula 1</a></div><div class="lesson-card"><h3>Aula 2 — Apresentações</h3><p class="small">Grátis</p><a class="btn" href="lesson2.html">Abrir Aula 2</a></div><div class="lesson-card"><h3>Aula 3 — Verb to be</h3><p class="small">Pago</p><button class="btn disabled">Bloqueado</button></div></div>
+    <div style="margin-top:16px"><a class="btn" href="profile.html">Ver Perfil</a></div>
+  </section>
+</main>
+<div class="qr"></div>
+<script src="app.js"></script>
+<script src="firebase-init.js"></script>
+</body>
+</html>

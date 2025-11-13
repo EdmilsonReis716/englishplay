@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>EnglishPlay — Perfil</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header"><div class="logo">EnglishPlay — Perfil</div><nav class="nav"><a href="index.html">Início</a><a href="lesson1.html">Aula 1</a><a href="lesson2.html">Aula 2</a></nav></header>
+<main class="container">
+  <section class="card">
+    <h2>Seu Perfil</h2>
+    <div id="info">
+      <p><strong>Nome:</strong> <span id="u-name">—</span></p>
+      <p><strong>Email:</strong> <span id="u-email">—</span></p>
+      <p><strong>Idade:</strong> <span id="u-age">—</span></p>
+      <p><strong>Pontuação:</strong> <span id="u-score">0</span></p>
+      <p><strong>Meta diária:</strong> <span id="u-target">—</span></p>
+      <p><strong>Streak:</strong> <span id="u-streak">0</span></p>
+    </div>
+    <div style="margin-top:12px"><button class="btn" id="resetBtn">Resetar dados</button></div>
+  </section>
+</main>
+<script>
+function getUser(){ try{ return JSON.parse(localStorage.getItem('ep_user')||'null'); }catch(e){return null;} }
+document.addEventListener('DOMContentLoaded', ()=>{
+  const u = getUser();
+  if(u){ document.getElementById('u-name').textContent = u.name || '—'; document.getElementById('u-email').textContent = u.email||'—'; document.getElementById('u-age').textContent = u.age||'—'; document.getElementById('u-score').textContent = u.score||0; document.getElementById('u-target').textContent = (u.target||'—') + ' dias'; document.getElementById('u-streak').textContent = u.streak||0; }
+  document.getElementById('resetBtn').addEventListener('click', ()=>{ if(confirm('Resetar dados locais?')){ localStorage.clear(); alert('Dados resetados. Recarregue a página.'); } });
+});
+</script>
+</body>
+</html>
