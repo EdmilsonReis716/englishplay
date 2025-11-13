@@ -1,0 +1,32 @@
+
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aula 2 — Apresentações</title><link rel="stylesheet" href="style.css"></head><body>
+<header class="site-header"><div class="logo">EnglishPlay — Aula 2 — Apresentações</div></header>
+<main class="container"><section class="card"><h2>Aula 2 — Apresentações</h2>
+<div class="personagens"><div class="char"><img src="srtv.png"><div class="mouth"></div><div class="small">Sr. TV</div></div><div class="char"><img src="emma.png"><div class="mouth"></div><div class="small">Emma</div></div><div class="char"><img src="jake.png"><div class="mouth"></div><div class="small">Jake</div></div></div>
+<p id="qtext">Carregando...</p><div id="opts" class="options"></div><div style="margin-top:12px"><button id="btnFinish" class="btn" style="display:none">Finalizar</button></div><div class="small">Pontuação nesta aula: <span id="score">0</span></div></section></main>
+<canvas id="fxc" style="position:fixed;left:0;top:0;pointer-events:none;z-index:60;display:none"></canvas>
+<script>
+const qs = [
+  {{q:'Hello', opts:['Bom dia','Olá','Boa noite'], a:1, speaker:'Emma'}},
+  {{q:'Hi', opts:['Tchau','Oi','Obrigado'], a:1, speaker:'Jake'}},
+  {{q:'Good morning', opts:['Boa noite','Bom dia','Olá'], a:1, speaker:'SrTV'}},
+  {{q:'Goodbye', opts:['Adeus','Olá','Bom dia'], a:0, speaker:'Jake'}},
+  {{q:'Thank you', opts:['Por favor','Obrigado','Desculpe'], a:1, speaker:'Emma'}},
+  {{q:'Please', opts:['Por favor','Sim','Não'], a:0, speaker:'SrTV'}},
+  {{q:'Sorry', opts:['Desculpe','Obrigado','Tchau'], a:0, speaker:'Jake'}},
+  {{q:'See you', opts:['Até logo','Vá embora','Oi'], a:0, speaker:'Emma'}},
+  {{q:'Good night', opts:['Boa noite','Bom dia','Olá'], a:0, speaker:'SrTV'}},
+  {{q:'Nice to meet you', opts:['Prazer em conhecê-lo','Até logo','Como vai?'], a:0, speaker:'Emma'}}
+];
+let idx=0, score=0;
+const qtext=document.getElementById('qtext'), opts=document.getElementById('opts'), scoreEl=document.getElementById('score');
+function render(){ if(idx>=qs.length){ qtext.textContent='Parabéns! Sua pontuação foi: '+score; opts.innerHTML=''; document.getElementById('btnFinish').style.display='inline-block'; saveResult(); return; } const cur = qs[idx]; qtext.textContent = (idx+1)+'. '+cur.q; opts.innerHTML=''; window.speechSynthesis.cancel(); if(cur.speaker==='SrTV') speakCharacter('Question '+(idx+1)+': '+cur.q, 'SrTV'); if(cur.speaker==='Emma') speakCharacter('Question '+(idx+1)+': '+cur.q, 'Emma'); if(cur.speaker==='Jake') speakCharacter('Question '+(idx+1)+': '+cur.q, 'Jake'); cur.opts.forEach((o,i)=>{ const b = document.createElement('button'); b.className='btn opt'; b.textContent = o; b.onclick = ()=>{ if(i===cur.a){ correct(); score+=10; scoreEl.textContent = score; } else { wrong(); } Array.from(opts.querySelectorAll('button')).forEach(x=>x.disabled=true); setTimeout(()=>{ idx++; render(); },900); }; opts.appendChild(b); }); }
+function correct(){ showFeedback(true); playSound(true); confetti(); }
+function wrong(){ showFeedback(false); playSound(false); sparks(); }
+function showFeedback(ok){ const f=document.createElement('div'); f.className='feedback'; f.style.position='fixed'; f.style.left='50%'; f.style.top='20%'; f.style.transform='translateX(-50%)'; f.style.padding='8px 14px'; f.style.borderRadius='10px'; f.style.zIndex=80; f.style.color = ok? '#7ee787':'#ff5b5b'; f.textContent = ok? '✔ Correct!':'✖ Wrong'; document.body.appendChild(f); setTimeout(()=>f.remove(),900); }
+function playSound(ok){ try{ new Audio(ok? 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_ee19b5c9b7.mp3?filename=trumpet-6058.mp3' : 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_7b35a46b3c.mp3?filename=incorrect-answer-6268.mp3').play(); }catch(e){} }
+function confetti(){ const c=document.getElementById('fxc'); const ctx=c.getContext('2d'); c.style.display='block'; c.width=innerWidth; c.height=innerHeight; let parts=[]; for(let i=0;i<80;i++){ parts.push({x:Math.random()*c.width,y:Math.random()*c.height/2,vx:(Math.random()-0.5)*8,vy:Math.random()*6+2,size:Math.random()*6+4,color: i%2? '#7ee787' : '#60a5fa'}); } (function anim(){ ctx.clearRect(0,0,c.width,c.height); parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.18; ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.size,p.size); }); if(parts.length) requestAnimationFrame(anim); setTimeout(()=>{ parts=[]; c.style.display='none'; },2000); })(); }
+function sparks(){ const c=document.getElementById('fxc'); const ctx=c.getContext('2d'); c.style.display='block'; c.width=innerWidth; c.height=innerHeight; let parts=[]; for(let i=0;i<60;i++){ parts.push({x:innerWidth/2+ (Math.random()-0.5)*180,y:innerHeight/2 + (Math.random()-0.5)*40,vx:(Math.random()-0.5)*12,vy:(Math.random()-2.5)*-6,size:Math.random()*4+2,color:'#ff5b5b'}); } (function anim(){ ctx.clearRect(0,0,c.width,c.height); parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.18; ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.size,p.size); }); if(parts.length) requestAnimationFrame(anim); setTimeout(()=>{ parts=[]; c.style.display='none'; },1400); })(); }
+function saveResult(){ try{ const curEmail = localStorage.getItem('ep_current'); if(!curEmail) return; const users = JSON.parse(localStorage.getItem('ep_users')||'[]'); const u = users.find(x=>x.email===curEmail); if(!u) return; u.completed = u.completed||[]; if(!u.completed.includes(2)) u.completed.push(2); if(!u.streak||u.streak===0) u.streak=1; u.score = (u.score||0) + score; localStorage.setItem('ep_users', JSON.stringify(users)); }catch(e){} }
+render();
+</script></body></html>
