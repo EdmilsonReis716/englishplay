@@ -1,0 +1,12 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Dashboard</title><link rel="stylesheet" href="styles/global.css"></head><body>
+<header class="top"><img src="assets/logo.png" class="logo small"><h1 class="brand">Dashboard</h1></header>
+<main class="container"><div id="welcome"></div><div id="lessons" class="lessons-grid"></div></main>
+<!-- Chat drawer -->
+<div id="chatDrawer" class="chat-drawer hidden">
+  <div class="chat-header">Chat <span id="chatTarget"></span> <button id="closeChat">X</button></div>
+  <div id="messages" class="chat-messages"></div>
+  <div class="chat-input"><input id="msgInput" placeholder="Mensagem..."><button id="sendMsg" class="btn primary">Enviar</button></div>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="scripts/dashboard.js"></script>
+</body></html>
