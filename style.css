@@ -1,32 +1,62 @@
+:root{
+  --bg:#030303;
+  --card:#111214;
+  --muted:#9aa0a6;
+  --yellow:#f5c518;
+  --accent:#ffd54a;
+  --neon: rgba(245,197,24,0.14);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#fff;font-family:Inter,Arial,Helvetica,sans-serif}
+.top{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid rgba(255,255,255,0.02)}
+.logo{display:flex;align-items:center;gap:12px}
+.tv{width:48px;height:48px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;color:#000;font-weight:800}
+.brand{color:var(--yellow);font-weight:800;font-size:18px}
+.search-wrap{display:flex;align-items:center;gap:8px}
+.search-wrap input{padding:10px 12px;border-radius:8px;background:#0b0c0d;border:1px solid rgba(255,255,255,0.03);color:#fff;min-width:220px}
+#userArea{min-width:220px;text-align:right}
 
-body {
-  background: #000;
-  color: #fff;
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-}
-#app { padding: 20px; }
-.card {
-  background: #111;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-}
-button {
-  padding: 10px;
-  margin: 4px;
-  background: #f5c518;
-  color: #000;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-}
-input {
-  padding: 8px;
-  margin: 6px 0;
-  width: 95%;
-  border-radius: 6px;
-  border: none;
+main{padding:28px;max-width:1200px;margin:0 auto}
+
+/* card */
+.card{background:var(--card);border-radius:12px;padding:18px;margin-bottom:18px;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+h1,h2,h3{margin:0 0 12px 0}
+.btn{background:var(--yellow);color:#000;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:700}
+.btn.small{padding:6px 8px;font-size:13px;border-radius:6px}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#ddd}
+.hidden{display:none}
+.banner{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:8px;z-index:120}
+
+/* lessons */
+.lesson-grid{display:flex;flex-wrap:wrap;gap:10px}
+.lesson-grid button{background:#3b3b2a;color:var(--yellow);border-radius:8px;padding:8px 12px;border:1px solid rgba(0,0,0,0.3)}
+
+/* modal */
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100}
+.modal .modal-card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.8)}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:80}
+
+/* payment modal layout */
+.pm-body{display:flex;gap:12px}
+.pm-col{flex:1}
+.pix-box{background:#fff;color:#000;padding:12px;border-radius:8px;min-height:100px;display:flex;align-items:center;justify-content:center;word-break:break-word}
+
+/* chat */
+.chat-box{height:300px;background:rgba(255,255,255,0.02);border-radius:8px;padding:12px;overflow:auto}
+.chat-bubble{padding:10px;border-radius:8px;margin-bottom:8px;max-width:80%}
+.chat-user{background:#0b1220;color:#fff;margin-left:auto}
+.chat-ai{background:#14202b;color:#fff}
+
+/* admin list */
+.user-row{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:6px;background:rgba(255,255,255,0.01);margin-bottom:6px}
+.small{font-size:13px;padding:6px 8px}
+
+/* lock animation for unlocked */
+.lock-wrap{display:flex;align-items:center;gap:12px}
+.lock-svg{width:56px;height:56px;transition:transform .6s ease}
+
+/* responsive */
+@media(max-width:800px){
+  .search-wrap input{min-width:120px}
+  .pm-body{flex-direction:column}
 }
