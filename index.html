@@ -1,207 +1,71 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EnglishPlay</title>
-
-<style>
-body {
-  background: #000;
-  color: #fff;
-  font-family: Arial;
-  margin: 0;
-  padding: 20px;
-}
-.card {
-  background: #111;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-}
-button {
-  padding: 10px;
-  margin: 4px;
-  background: #f5c518;
-  color: #000;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-}
-input {
-  padding: 8px;
-  width: 95%;
-  margin: 6px 0;
-  border-radius: 6px;
-  border: none;
-}
-</style>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EnglishPlay</title>
+  <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-
-<div id="app">Carregando...</div>
-
-<script>
-// ===== BANCO DE DADOS LOCAL =====
-function loadDB(){ return JSON.parse(localStorage.getItem('englishplay_db') || '{"users":[]}'); }
-function saveDB(db){ localStorage.setItem('englishplay_db', JSON.stringify(db)); }
-
-function getSession(){ return JSON.parse(localStorage.getItem('englishplay_session') || 'null'); }
-function setSession(u){ localStorage.setItem('englishplay_session', JSON.stringify(u)); }
-
-// ===== TELAS =====
-const app = document.getElementById('app');
-
-function renderLogin(){
-  app.innerHTML = `
-    <div class='card'>
-      <h2>Login</h2>
-      <input id='loginUser' placeholder='Usuário'>
-      <button onclick='doLogin()'>Entrar</button>
-      <button onclick='renderRegister()'>Criar conta</button>
+  <header class="top">
+    <div class="logo"><div class="tv">TV</div><div class="brand">EnglishPlay</div></div>
+    <div class="search-wrap">
+      <input id="searchInput" placeholder="Pesquisar usuários..." />
+      <button id="notifBtn" title="Notificações">🔔</button>
+      <div id="userArea"></div>
     </div>
-  `;
-}
+  </header>
 
-function renderRegister(){
-  app.innerHTML = `
-    <div class='card'>
-      <h2>Cadastro</h2>
-      <input id='regUser' placeholder='Usuário'>
-      <button onclick='doRegister()'>Criar</button>
-      <button onclick='renderLogin()'>Voltar</button>
-    </div>
-  `;
-}
+  <main id="main">
+    <!-- App content injected by script.js -->
+  </main>
 
-function doRegister(){
-  const name = document.getElementById('regUser').value.trim();
-  if(!name) return alert("Digite um nome!");
-  const db = loadDB();
-  if(db.users.find(u=>u.username === name)) return alert("Nome já existe!");
+  <!-- Modals / Overlays -->
+  <div id="overlay" class="hidden"></div>
 
-  const isAdmin = (name === "Administrador.EnglishPlay");
-
-  const user = {
-    id: Date.now(),
-    username: name,
-    isAdmin,
-    verified: isAdmin,
-    banned: false,
-    unlockedLessons: 5
-  };
-
-  db.users.push(user);
-  saveDB(db);
-  setSession(user);
-  renderHome();
-}
-
-function doLogin(){
-  const name = document.getElementById('loginUser').value.trim();
-  const db = loadDB();
-  const u = db.users.find(x=>x.username===name);
-  if(!u) return alert("Usuário não encontrado!");
-  if(u.banned) return alert("Você está banido.");
-  setSession(u);
-  renderHome();
-}
-
-function renderHome(){
-  const u = getSession();
-  if(!u) return renderLogin();
-
-  app.innerHTML = `
-    <div class='card'>
-      <h2>Bem-vindo, ${u.username} ${u.verified?"✔":""}</h2>
-      <button onclick='renderProfile()'>Perfil</button>
-      ${u.isAdmin? "<button onclick='renderAdmin()'>Admin</button>":""}
-      <button onclick='logout()'>Sair</button>
-    </div>
-
-    <div class='card'>
-      <h3>Aulas</h3>
-      <div id='lessons'></div>
-    </div>
-  `;
-
-  const lessons = document.getElementById("lessons");
-  let html = "";
-  for(let i=1; i<=20; i++){
-    const blocked = i > u.unlockedLessons;
-    html += `<button ${blocked?"style='opacity:0.4'":""} onclick='openLesson(${i})'>${blocked?"Bloqueada ":"Aula "} ${i}</button>`;
-  }
-  lessons.innerHTML = html;
-}
-
-function openLesson(n){
-  const u = getSession();
-  if(n > u.unlockedLessons) return alert("Aula bloqueada!");
-  alert("Abrindo aula " + n);
-}
-
-function renderProfile(){
-  const u = getSession();
-  app.innerHTML = `
-    <div class='card'>
-      <h2>Perfil</h2>
-      <p>Usuário: ${u.username} ${u.verified?"✔":""}</p>
-      <p>Status: ${u.banned? "Banido":"Ativo"}</p>
-      <button onclick='renderHome()'>Voltar</button>
-    </div>
-  `;
-}
-
-function renderAdmin(){
-  const u = getSession();
-  if(!u.isAdmin) return renderHome();
-
-  const db = loadDB();
-  let html = "";
-
-  db.users.forEach(us=>{
-    html += `
-      <div>
-        ${us.username} ${us.verified?"✔":""} ${us.banned?"(Banido)":""}
-        ${us.banned?
-          `<button onclick='unban(${us.id})'>Desbanir</button>` :
-          `<button onclick='ban(${us.id})'>Banir</button>`
-        }
+  <!-- Payment Modal / QR -->
+  <div id="paymentModal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="pm_title">Desbloquear Aula</h3>
+      <div class="pm-body">
+        <div class="pm-col">
+          <div class="label">PIX (chave de exemplo)</div>
+          <div class="pix-box" id="pixBox"></div>
+          <button class="btn small" id="copyPix">Copiar chave PIX</button>
+        </div>
+        <div class="pm-col">
+          <div class="label">Cartão / Mercado Pago</div>
+          <div style="margin-top:6px;color:#ddd;font-size:14px">Nesta versão estática o Mercado Pago está simulado.</div>
+          <button class="btn" id="simulatePay">Simular pagamento (desbloquear)</button>
+        </div>
       </div>
-    `;
-  });
-
-  app.innerHTML = `
-    <div class='card'>
-      <h2>Painel Admin</h2>
-      <button onclick='renderHome()'>Voltar</button>
-      <h3>Usuários</h3>
-      ${html}
+      <div style="text-align:right;margin-top:10px">
+        <button class="btn ghost" id="closePayment">Fechar</button>
+      </div>
     </div>
-  `;
-}
+  </div>
 
-function ban(id){
-  const db = loadDB();
-  const u = db.users.find(x=>x.id===id);
-  if(u){ u.banned = true; saveDB(db); renderAdmin(); }
-}
-function unban(id){
-  const db = loadDB();
-  const u = db.users.find(x=>x.id===id);
-  if(u){ u.banned = false; saveDB(db); renderAdmin(); }
-}
+  <!-- Chat Modal for Sr. TV -->
+  <div id="chatModal" class="modal hidden">
+    <div class="modal-card" style="width:760px;max-width:95vw">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>Sr. TV — Suporte e IA</h3>
+        <div>
+          <button class="btn small" id="openSettings">Configurar OpenAI</button>
+          <button class="btn ghost" id="closeChat">Fechar</button>
+        </div>
+      </div>
+      <div id="chatBox" class="chat-box"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="chatInput" placeholder="Escreva sua dúvida" />
+        <button class="btn" id="sendChat">Enviar</button>
+      </div>
+    </div>
+  </div>
 
-function logout(){
-  localStorage.removeItem("englishplay_session");
-  renderLogin();
-}
+  <!-- Admin message banner -->
+  <div id="globalBanner" class="banner hidden"></div>
 
-// iniciar
-renderLogin();
-</script>
-
+  <script src="./script.js"></script>
 </body>
 </html>
