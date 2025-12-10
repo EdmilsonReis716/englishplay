@@ -2,70 +2,244 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
+  <title>EnglishPlay - root safe</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EnglishPlay</title>
-  <link rel="stylesheet" href="./style.css">
+  <style>
+    /* Minimal, self-contained styling to guarantee visible UI */
+    html,body{height:100%;margin:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif}
+    .wrap{max-width:1100px;margin:18px auto;padding:18px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .logo{display:flex;align-items:center;gap:10px}
+    .tv{width:48px;height:48px;border-radius:50%;background:#f5c518;color:#000;display:flex;align-items:center;justify-content:center;font-weight:900}
+    h1{margin:0 0 8px 0}
+    .card{background:#0f0f10;padding:18px;border-radius:12px;margin-top:18px}
+    button{background:#f5c518;border:0;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:700}
+    input{padding:8px;border-radius:8px;border:0;background:#111;color:#fff;width:100%}
+    .lessons{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    .lesson-btn{padding:8px 12px;border-radius:8px;background:#2b2a1f;border:1px solid rgba(255,255,255,0.03);color:#f5c518;cursor:pointer}
+    .locked{opacity:.45}
+    .banner{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#ffd54a;color:#000;padding:10px 14px;border-radius:8px;z-index:999}
+    .admin-badge{color:#4ade80;margin-left:8px}
+    /* ensure visible if site was blank due to CSS issues */
+    #debug { margin-top:12px; color:#ccc; font-size:13px; }
+  </style>
 </head>
 <body>
-  <header class="top">
-    <div class="logo"><div class="tv">TV</div><div class="brand">EnglishPlay</div></div>
-    <div class="search-wrap">
-      <input id="searchInput" placeholder="Pesquisar usuários..." />
-      <button id="notifBtn" title="Notificações">🔔</button>
+  <div class="wrap">
+    <div class="top">
+      <div class="logo"><div class="tv">TV</div><div><h1>EnglishPlay</h1><div style="color:#9aa0a6;font-size:14px">Seu portal de estudos</div></div></div>
       <div id="userArea"></div>
     </div>
-  </header>
 
-  <main id="main">
-    <!-- App content injected by script.js -->
-  </main>
-
-  <!-- Modals / Overlays -->
-  <div id="overlay" class="hidden"></div>
-
-  <!-- Payment Modal / QR -->
-  <div id="paymentModal" class="modal hidden">
-    <div class="modal-card">
-      <h3 id="pm_title">Desbloquear Aula</h3>
-      <div class="pm-body">
-        <div class="pm-col">
-          <div class="label">PIX (chave de exemplo)</div>
-          <div class="pix-box" id="pixBox"></div>
-          <button class="btn small" id="copyPix">Copiar chave PIX</button>
-        </div>
-        <div class="pm-col">
-          <div class="label">Cartão / Mercado Pago</div>
-          <div style="margin-top:6px;color:#ddd;font-size:14px">Nesta versão estática o Mercado Pago está simulado.</div>
-          <button class="btn" id="simulatePay">Simular pagamento (desbloquear)</button>
-        </div>
-      </div>
-      <div style="text-align:right;margin-top:10px">
-        <button class="btn ghost" id="closePayment">Fechar</button>
-      </div>
+    <div id="app">
+      <!-- injected by script below -->
     </div>
+
+    <div id="debug" aria-hidden="true"></div>
   </div>
 
-  <!-- Chat Modal for Sr. TV -->
-  <div id="chatModal" class="modal hidden">
-    <div class="modal-card" style="width:760px;max-width:95vw">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3>Sr. TV — Suporte e IA</h3>
-        <div>
-          <button class="btn small" id="openSettings">Configurar OpenAI</button>
-          <button class="btn ghost" id="closeChat">Fechar</button>
-        </div>
-      </div>
-      <div id="chatBox" class="chat-box"></div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input id="chatInput" placeholder="Escreva sua dúvida" />
-        <button class="btn" id="sendChat">Enviar</button>
-      </div>
+<script>
+/* Single-file app: robust minimal version — guaranteed to render.
+   If you still see white, likely the file on GitHub is not this one or cache. */
+console.log('EnglishPlay inline app starting');
+
+// Storage keys
+const DB_KEY = 'englishplay_db_v2';
+const SESS_KEY = 'englishplay_session_v2';
+
+// Helpers
+function loadDB(){ try{ return JSON.parse(localStorage.getItem(DB_KEY)) }catch(e){ return {users:[]}; } }
+function saveDB(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+function getSession(){ return JSON.parse(localStorage.getItem(SESS_KEY) || 'null'); }
+function setSession(u){ localStorage.setItem(SESS_KEY, JSON.stringify(u)); }
+function clearSession(){ localStorage.removeItem(SESS_KEY); }
+
+// Ensure DB present
+(function initDB(){
+  const db = loadDB();
+  if(!db.users) db.users = [];
+  // ensure there is at least one sample non-admin for testing
+  if(!db.users.find(u=>u.username==='Junior')) db.users.push({ id: 1001, username:'Junior', verified:false, isAdmin:false, banned:false, unlockedLessons:5, friends:[] });
+  saveDB(db);
+})();
+
+// UI refs
+const app = document.getElementById('app');
+const userArea = document.getElementById('userArea');
+const debug = document.getElementById('debug');
+
+function escapeHtml(s){ if(!s && s!==0) return ''; return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[c])); }
+
+// Header user area
+function renderHeader(){
+  const u = getSession();
+  if(!u){
+    userArea.innerHTML = '<button id="btnAuth">Entrar / Cadastrar</button>';
+    document.getElementById('btnAuth').onclick = ()=>renderAuth();
+  } else {
+    userArea.innerHTML = `<span style="margin-right:12px">Olá, <strong>${escapeHtml(u.username)}</strong> ${u.verified?'<span class="admin-badge">✔</span>':''}</span>
+      <button id="btnProfile">Perfil</button>
+      ${u.isAdmin?'<button id="btnAdmin">Admin</button>':''}
+      <button id="btnChat">Sr.TV</button>
+      <button id="btnLogout">Sair</button>`;
+    document.getElementById('btnProfile').onclick = renderProfile;
+    if(document.getElementById('btnAdmin')) document.getElementById('btnAdmin').onclick = renderAdmin;
+    document.getElementById('btnChat').onclick = ()=>alert('Sr.TV (simulado) — abra o chat no app real.');
+    document.getElementById('btnLogout').onclick = ()=>{ clearSession(); renderHeader(); renderAuth(); };
+  }
+}
+
+// Screens
+function renderAuth(){
+  app.innerHTML = `<div class="card"><h2>Login</h2>
+    <input id="loginName" placeholder="Email ou usuário" />
+    <div style="margin-top:8px"><button id="doLogin">Entrar</button> <button id="toRegister" style="margin-left:8px">Criar conta</button></div></div>`;
+  document.getElementById('doLogin').onclick = doLogin;
+  document.getElementById('toRegister').onclick = renderRegister;
+  renderHeader();
+}
+
+function renderRegister(){
+  app.innerHTML = `<div class="card"><h2>Cadastro</h2>
+    <input id="regUser" placeholder="Nome de usuário (único)" />
+    <input id="regPass" placeholder="Senha (qualquer)" style="margin-top:6px" />
+    <div style="margin-top:8px"><button id="doReg">Criar</button> <button id="backAuth" style="margin-left:8px">Voltar</button></div></div>`;
+  document.getElementById('doReg').onclick = doRegister;
+  document.getElementById('backAuth').onclick = renderAuth;
+  renderHeader();
+}
+
+function renderHome(){
+  const u = getSession();
+  if(!u) return renderAuth();
+  const db = loadDB();
+  // show admin banner if global message exists (saved under db.globalMessage)
+  if(db.globalMessage && db.globalMessage.active) showBanner(db.globalMessage.text);
+  let html = `<div class="card"><h2>Bem-vindo, ${escapeHtml(u.username)} ${u.verified? '✔':''}</h2>
+    <div style="margin-top:8px">
+      <button onclick="renderProfile()">Perfil</button>
+      ${u.isAdmin? '<button onclick="renderAdmin()">Admin</button>':''}
+      <button onclick="openChat()">Falar (Sr.TV)</button>
+      <button onclick="logout()">Sair</button>
     </div>
-  </div>
+  </div>`;
+  html += `<div class="card"><h3>Aulas (demo 1..20)</h3><div class="lessons">`;
+  for(let i=1;i<=20;i++){
+    const unlocked = i <= (u.unlockedLessons||0);
+    html += `<button class="lesson-btn ${unlocked? '':'locked'}" onclick="onLessonClick(${i})">${unlocked? 'Aula '+i : 'Bloqueada '+i}</button>`;
+  }
+  html += `</div></div>`;
+  app.innerHTML = html;
+  renderHeader();
+}
 
-  <!-- Admin message banner -->
-  <div id="globalBanner" class="banner hidden"></div>
+function renderProfile(){
+  const u = getSession(); if(!u) return renderAuth();
+  const db = loadDB();
+  const best = u.bestFriendId ? (db.users.find(x=>x.id===u.bestFriendId)?.username || '-') : '-';
+  app.innerHTML = `<div class="card"><h2>Perfil</h2>
+    <p>Usuário: ${escapeHtml(u.username)} ${u.verified? '✔':''}</p>
+    <p>Dias consecutivos: ${u.streak||0}</p><p>Pontos: ${u.points||0}</p><p>Melhor amigo: ${escapeHtml(best)}</p>
+    <div style="margin-top:10px"><button onclick="renderHome()">Voltar</button></div>
+  </div>`;
+  renderHeader();
+}
 
-  <script src="./script.js"></script>
+function renderAdmin(){
+  const u = getSession(); if(!u || !u.isAdmin) return renderHome();
+  const db = loadDB();
+  const usersHtml = db.users.map(us=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:6px;background:#0b0b0b;margin-bottom:6px">
+    <div>${escapeHtml(us.username)} ${us.verified? '✔':''} ${us.banned?'<span style="color:#ff7b7b">(Banido)</span>':''}</div>
+    <div>${us.banned? `<button onclick="unban(${us.id})">Desbanir</button>` : `<button onclick="ban(${us.id})">Banir</button>`}</div>
+  </div>`).join('');
+  app.innerHTML = `<div class="card"><h2>Painel Admin</h2><div style="margin-top:8px"><button onclick="renderHome()">Voltar</button></div>
+    <h3 style="margin-top:12px">Usuários</h3>${usersHtml}
+    <h3 style="margin-top:12px">Mensagens Globais</h3>
+    <textarea id="adminGlobal" style="width:100%;height:80px">${db.globalMessage?db.globalMessage.text:''}</textarea>
+    <div style="margin-top:8px"><button onclick="publishGlobal()">Publicar</button></div>
+    <h3 style="margin-top:12px">Editar Aulas (JSON)</h3>
+    <textarea id="adminAulas" style="width:100%;height:120px">${JSON.stringify(db.lessons||{},null,2)}</textarea>
+    <div style="margin-top:8px"><button onclick="saveLessons()">Salvar aulas</button></div>
+  </div>`;
+  renderHeader();
+  loadAdminStats();
+}
+
+// Actions
+function doRegister(){
+  const username = document.getElementById('regUser').value.trim();
+  const pw = document.getElementById('regPass').value;
+  if(!username) return alert('Preencha nome');
+  const db = loadDB(); if(db.users.some(u=>u.username===username)) return alert('Nome já existe');
+  const isAdmin = username === 'Administrador.EnglishPlay';
+  const user = { id: Date.now(), username, password: pw||'', isAdmin, verified:isAdmin, banned:false, unlockedLessons:5, friends:[],points:0,streak:0 };
+  db.users.push(user); saveDB(db); setSession(user); showBanner('Conta criada!'); renderQuestionnaire();
+}
+
+function doLogin(){
+  const name = document.getElementById('loginName').value.trim();
+  const db = loadDB(); const u = db.users.find(x=>x.username===name || x.email===name);
+  if(!u) return alert('Usuário não encontrado');
+  if(u.banned) return alert('Você está banido');
+  setSession(u); renderHeader(); renderHome();
+}
+
+function renderQuestionnaire(){
+  app.innerHTML = `<div class="card"><h2>Questionário</h2>
+    <label>Como ficou sabendo?</label><input id="q1" placeholder="Ex: Instagram" />
+    <label>Meta diária (dias)</label><input id="q2" placeholder="7" />
+    <label>Por que aprender?</label><input id="q3" placeholder="Ex: Trabalho" />
+    <div style="margin-top:10px"><button onclick="finishQuestionnaire()">Finalizar</button></div></div>`;
+  renderHeader();
+}
+function finishQuestionnaire(){ const db=loadDB(); const s=getSession(); const u=db.users.find(x=>x.id===s.id); if(u){ u.q={source:document.getElementById('q1').value,goal:document.getElementById('q2').value,reason:document.getElementById('q3').value}; saveDB(db); setSession(u);} renderHome(); }
+
+function onLessonClick(n){
+  const s = getSession(); if(!s) return renderAuth();
+  if(n <= (s.unlockedLessons||0)) return alert('Abrindo Aula '+n+'\nConteúdo demo (estático).');
+  // else open payment simulate
+  if(confirm('Aula bloqueada. Deseja simular pagamento e desbloquear?')) simulatePayment(n);
+}
+
+function simulatePayment(n){
+  const db = loadDB(); const s = getSession();
+  const pref = 'pref_'+Date.now();
+  db.preferences = db.preferences || {}; db.preferences[pref] = { userId: s.id, lesson: n, status:'approved', created:Date.now() };
+  const u = db.users.find(x=>x.id===s.id); if(u) u.unlockedLessons = Math.max(u.unlockedLessons||0,n);
+  saveDB(db); setSession(u); showBanner('Aula '+n+' desbloqueada (simulado)'); renderHome();
+}
+
+// friends/requests (simple)
+function sendFriendRequest(id){ const s = getSession(); if(!s) return renderAuth(); if(s.id===id) return alert('Não pode adicionar si mesmo'); const db=loadDB(); const t=db.users.find(u=>u.id===id); if(!t) return alert('Usuário não existe'); t.friendRequests = t.friendRequests || []; if(!t.friendRequests.includes(s.id)){ t.friendRequests.push(s.id); saveDB(db); alert('Pedido enviado'); } else alert('Pedido já enviado'); }
+function acceptFriend(id){ const s=getSession(), db=loadDB(), me=db.users.find(u=>u.id===s.id), other=db.users.find(u=>u.id===id); if(!other) return; me.friends = me.friends||[]; other.friends = other.friends||[]; if(!me.friends.includes(id)) me.friends.push(id); if(!other.friends.includes(me.id)) other.friends.push(me.id); saveDB(db); setSession(me); alert('Amizade aceita'); }
+
+// Admin actions
+function ban(id){ const s=getSession(); if(!s || !s.isAdmin) return alert('Somente admin'); const db=loadDB(); const u=db.users.find(x=>x.id===id); if(u){ u.banned=true; saveDB(db); renderAdmin(); } }
+function unban(id){ const s=getSession(); if(!s || !s.isAdmin) return alert('Somente admin'); const db=loadDB(); const u=db.users.find(x=>x.id===id); if(u){ u.banned=false; saveDB(db); renderAdmin(); } }
+function publishGlobal(){ const s=getSession(); if(!s || !s.isAdmin) return alert('Somente admin'); const txt = document.getElementById('adminGlobal').value; const db=loadDB(); db.globalMessage={text:txt,active:true,created:Date.now()}; saveDB(db); showBanner('Mensagem global publicada'); }
+function saveLessons(){ const s=getSession(); if(!s || !s.isAdmin) return alert('Somente admin'); try{ const raw = document.getElementById('adminAulas').value; const parsed = JSON.parse(raw); const db=loadDB(); db.lessons = parsed; saveDB(db); alert('Aulas salvas'); }catch(e){ alert('JSON inválido'); } }
+function loadAdminStats(){ const db=loadDB(); const stats = { totalUsers: db.users.length, banned: db.users.filter(u=>u.banned).length, totalUnlocked: db.users.reduce((a,b)=>a+(b.unlockedLessons||0),0), prefs: Object.keys(db.preferences||{}).length }; const el = document.getElementById('adminStats'); if(el) el.innerHTML = `<div>Total: ${stats.totalUsers}</div><div>Banidos: ${stats.banned}</div><div>Somatório Unlocked: ${stats.totalUnlocked}</div><div>Preferências sim: ${stats.prefs}</div>`; }
+
+// Small utilities
+function renderHeader(){ /* placeholder to avoid missing function errors when called earlier */ }
+function showBanner(text){ const el = document.createElement('div'); el.className='banner'; el.innerText = text; document.body.appendChild(el); setTimeout(()=>el.remove(),6000); }
+
+// Chat / Sr.TV (simulated)
+function openChat(){ alert('Sr.TV: (simulado) Pergunte sobre inglês ou suporte. Para usar OpenAI no navegador, cole sua chave no app real.'); }
+
+// boot
+(function boot(){
+  try{
+    // render header & app
+    renderHeader = function(){ /* real header render implementation */ const u = getSession(); if(!u){ userArea.innerHTML = '<button id="btnAuth2">Entrar / Cadastrar</button>'; document.getElementById('btnAuth2').onclick = renderAuth; } else { userArea.innerHTML = `<span>Olá, <strong>${escapeHtml(u.username)}</strong> ${u.verified? '✔':''}</span> <button id="goProfile">Perfil</button> ${u.isAdmin?'<button id="goAdmin">Admin</button>':''} <button id="goChat">Sr.TV</button> <button id="doLogout">Sair</button>`; document.getElementById('goProfile').onclick = renderProfile; if(document.getElementById('goAdmin')) document.getElementById('goAdmin').onclick = renderAdmin; document.getElementById('goChat').onclick = openChat; document.getElementById('doLogout').onclick = ()=>{ clearSession(); renderHeader(); renderAuth(); }; } };
+    const sess = getSession();
+    if(sess) { renderHeader(); renderHome(); } else { renderHeader(); renderAuth(); }
+    debug.innerText = 'App carregado — verifique console se algo falhar.';
+  }catch(e){
+    document.body.innerHTML = '<pre style="color:#fff;background:#000;padding:20px">Erro crítico: '+(e.message||e)+'</pre>';
+    console.error(e);
+  }
+})();
+</script>
 </body>
 </html>
