@@ -1,1072 +1,357 @@
 /* =========================================================
-   ENGLISHPLAY — SCRIPT PRINCIPAL
-   Compatível com GitHub Pages (sem backend)
-   Inclui:
-   ✔ Cadastro / Login
-   ✔ Questionário
-   ✔ Perfil
-   ✔ Amizades + Melhor Amigo
-   ✔ Aulas + desbloqueio com “pagamento simulado”
-   ✔ Sr.TV IA Offline (SEM API KEY)
-   ✔ Admin (ban, mensagens, editar aulas, estatísticas)
-   ✔ Confete + cadeado abrindo
+   EnglishPlay — Interface-only package (front-end)
+   - Zig-zag tree (one node per row)
+   - Sr.TV offline chat (closes & replies)
+   - Avatar upload (local)
+   - Payment simulated (local)
+   - Progress saved to localStorage (per browser)
    ========================================================= */
 
-console.log("EnglishPlay v3 Loaded ✔");
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const DATA_KEY = "englishplay_data_v1";
 
-/* =========================================================
-   CONSTANTES E UTILIDADES
-   ========================================================= */
-
-const DB_KEY = "englishplay_db_v3";
-const SESS_KEY = "englishplay_session_v3";
-
-function dbLoad() {
-    try { return JSON.parse(localStorage.getItem(DB_KEY)); }
-    catch { return { users: [], lessons: {}, globalMessage: null }; }
+function saveState(state){
+  localStorage.setItem(DATA_KEY, JSON.stringify(state));
 }
-
-function dbSave(db) {
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
+function loadState(){
+  try { return JSON.parse(localStorage.getItem(DATA_KEY)) } catch { return null }
 }
-
-function sessionGet() {
-    return JSON.parse(localStorage.getItem(SESS_KEY) || "null");
-}
-
-function sessionSet(u) {
-    localStorage.setItem(SESS_KEY, JSON.stringify(u));
-}
-
-function sessionClear() {
-    localStorage.removeItem(SESS_KEY);
-}
-
-function escapeHtml(s) {
-    if (!s) return "";
-    return s.replace(/[&<>"']/g, c => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "\"": "&quot;",
-        "'": "&#39;"
-    }[c]));
-}
-
-/* =========================================================
-   INICIALIZAÇÃO DO BANCO
-   ========================================================= */
-(function init() {
-    let db = dbLoad();
-    if (!db.users) db.users = [];
-    if (!db.lessons) db.lessons = {};
-    if (!db.globalMessage) db.globalMessage = null;
-
-    // Usuário de teste padrão
-    if (!db.users.find(u => u.username === "Junior")) {
-        db.users.push({
-            id: 1001,
-            username: "Junior",
-            name: "Junior",
-            password: "123",
-            verified: false,
-            isAdmin: false,
-            banned: false,
-            unlockedLessons: 5,
-            friends: [],
-            friendRequests: [],
-            points: 0,
-            streak: 0
-        });
-    }
-    dbSave(db);
-})();
-
-/* =========================================================
-   ELEMENTOS DA INTERFACE
-   ========================================================= */
-
-const main = document.getElementById("main");
-const userArea = document.getElementById("userArea");
-const overlay = document.getElementById("overlay");
-
-overlay.addEventListener("click", () => {
-    closeChat();
-    closePayment();
-});
-
-/* =========================================================
-   TELA DE LOGIN
-   ========================================================= */
-
-function renderAuth() {
-    main.innerHTML = `
-    <div class="card">
-        <h2>Login</h2>
-        <input id="loginUser" placeholder="Usuário ou Email">
-        <input id="loginPass" type="password" placeholder="Senha">
-        <div style="margin-top:10px;">
-            <button class="btn" onclick="login()">Entrar</button>
-            <button class="btn ghost" onclick="renderRegister()">Criar Conta</button>
-        </div>
-    </div>`;
-    renderHeader();
-}
-
-/* =========================================================
-   CADASTRO
-   ========================================================= */
-
-function renderRegister() {
-    main.innerHTML = `
-    <div class="card">
-        <h2>Cadastrar</h2>
-        <input id="regUser" placeholder="Nome de usuário">
-        <input id="regName" placeholder="Seu nome (apelido)">
-        <input id="regPass" type="password" placeholder="Senha">
-        <input id="regPass2" type="password" placeholder="Confirmar senha">
-        <div style="margin-top:10px;">
-            <button class="btn" onclick="register()">Criar</button>
-            <button class="btn ghost" onclick="renderAuth()">Voltar</button>
-        </div>
-    </div>`;
-    renderHeader();
-}
-
-function register() {
-    let username = document.getElementById("regUser").value.trim();
-    let name = document.getElementById("regName").value.trim();
-    let pw = document.getElementById("regPass").value;
-    let pw2 = document.getElementById("regPass2").value;
-
-    if (!username || !pw) return alert("Preencha todos os campos.");
-    if (pw !== pw2) return alert("Senhas não coincidem.");
-
-    let db = dbLoad();
-
-    if (db.users.some(u => u.username === username))
-        return alert("Esse nome de usuário já existe.");
-
-    let isAdmin = username === "Administrador.EnglishPlay";
-
-    let user = {
-        id: Date.now(),
-        username,
-        name,
-        password: pw,
-        verified: isAdmin,
-        isAdmin,
-        banned: false,
-        unlockedLessons: 5,
-        friends: [],
-        friendRequests: [],
-        points: 0,
-        streak: 0
+function ensureState(){
+  let st = loadState();
+  if(!st){
+    st = {
+      users: [], // visual-only users if you create them
+      currentUser: null,
+      lessons: Array.from({length:200}, (_,i)=>({
+        id: i+1,
+        unlocked: i < 5, // first 5 unlocked
+        done: false
+      })),
+      globalMessage: null
     };
+    saveState(st);
+  }
+  return st;
+}
+let state = ensureState();
 
-    db.users.push(user);
-    dbSave(db);
+/* ---------- Initial UI wiring ---------- */
+const main = document.getElementById('main');
+const userArea = document.getElementById('userArea');
+const overlay = document.getElementById('overlay');
+const chatModal = document.getElementById('chatModal');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const sendChatBtn = document.getElementById('sendChatBtn');
+const closeChatBtn = document.getElementById('closeChatBtn');
+const paymentModal = document.getElementById('paymentModal');
+const simulatePayBtn = document.getElementById('simulatePayBtn');
+const closePayBtn = document.getElementById('closePayBtn');
+const avatarFile = document.getElementById('avatarFile');
 
-    sessionSet(user);
-    renderQuestionnaire();
+overlay.addEventListener('click', ()=>{ closeChat(); closePayment(); });
+closeChatBtn?.addEventListener('click', closeChat);
+sendChatBtn?.addEventListener('click', handleSendChat);
+simulatePayBtn?.addEventListener('click', simulatePayment);
+closePayBtn?.addEventListener('click', closePayment);
+avatarFile?.addEventListener('change', handleAvatarFile);
+
+/* ---------- Render header / user area ---------- */
+function renderHeader(){
+  const u = state.currentUser;
+  if(!u){
+    userArea.innerHTML = `<button class="nav-btn" id="enterBtn">Entrar / Cadastrar</button>`;
+    $('enterBtn').onclick = () => renderAuth();
+    return;
+  }
+  userArea.innerHTML = `
+    <span style="margin-right:8px">Olá, <strong>${u.username}</strong> ${u.verified? '✔':''}</span>
+    <button class="nav-btn" id="btnProfile">Perfil</button>
+    <button class="nav-btn" id="btnChat">Sr.TV</button>
+    <button class="nav-btn" id="btnLogout">Sair</button>
+  `;
+  $('btnProfile').onclick = renderProfile;
+  $('btnChat').onclick = openChat;
+  $('btnLogout').onclick = () => { state.currentUser = null; saveState(state); renderAuth(); renderHeader(); }
 }
 
-/* =========================================================
-   LOGIN
-   ========================================================= */
-
-function login() {
-    let user = document.getElementById("loginUser").value.trim();
-    let pass = document.getElementById("loginPass").value;
-
-    let db = dbLoad();
-    let u = db.users.find(
-        x => (x.username === user || x.email === user) && x.password === pass
-    );
-
-    if (!u) return alert("Usuário ou senha incorretos.");
-    if (u.banned) return alert("Sua conta está banida.");
-
-    sessionSet(u);
-    renderHome();
-}
-
-/* =========================================================
-   QUESTIONÁRIO
-   ========================================================= */
-
-function renderQuestionnaire() {
-    main.innerHTML = `
+/* ---------- Auth screens (visual-only) ---------- */
+function renderAuth(){
+  main.innerHTML = `
     <div class="card">
-        <h2>Questionário</h2>
-
-        <label>Como conheceu o EnglishPlay?</label>
-        <input id="q1">
-
-        <label>Meta diária (dias)?</label>
-        <input id="q2">
-
-        <label>Por que quer aprender inglês?</label>
-        <input id="q3">
-
-        <label>Nível atual:</label>
-        <select id="q4">
-            <option value="nada">Não sei nada</option>
-            <option value="pouco">Pouco</option>
-            <option value="basico">Conversas básicas</option>
-            <option value="fluente">Fluente</option>
-        </select>
-
-        <div style="margin-top:10px;">
-            <button class="btn" onclick="finishQuestionnaire()">Finalizar</button>
-        </div>
-    </div>`;
-}
-
-function finishQuestionnaire() {
-    let db = dbLoad();
-    let s = sessionGet();
-    let u = db.users.find(x => x.id === s.id);
-
-    u.q = {
-        source: q1.value,
-        goal: q2.value,
-        reason: q3.value,
-        level: q4.value
-    };
-
-    dbSave(db);
-    sessionSet(u);
-
-    renderHome();
-}
-
-/* =========================================================
-   HOME
-   ========================================================= */
-
-function renderHome() {
-    let u = sessionGet();
-    if (!u) return renderAuth();
-
-    let db = dbLoad();
-
-    // banner admin
-    if (db.globalMessage?.active) showBanner(db.globalMessage.text);
-
-    let html = `
-    <div class="card">
-        <h2>Bem-vindo, ${escapeHtml(u.username)} ${u.verified ? "✔" : ""}</h2>
-        <button class="btn small" onclick="renderProfile()">Perfil</button>
-        ${u.isAdmin ? `<button class="btn small" onclick="renderAdmin()">Admin</button>` : ""}
-        <button class="btn small" onclick="openChat()">Sr.TV</button>
-        <button class="btn small" onclick="logout()">Sair</button>
+      <h2>Entrar / Cadastrar</h2>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <input id="authUser" placeholder="Nome de usuário">
+        <button class="nav-btn" id="authLoginBtn">Entrar</button>
+        <button class="nav-btn" id="authRegisterBtn">Cadastrar</button>
+      </div>
+      <p style="margin-top:12px;color:var(--muted)">Na versão pública as contas são locais ao navegador.</p>
     </div>
-
-    <div class="card">
-        <h3>Aulas</h3>
-        <div id="lessonGrid" class="lesson-grid"></div>
-    </div>`;
-
-    main.innerHTML = html;
-    renderLessons();
+  `;
+  $('authLoginBtn').onclick = () => {
+    const username = $('authUser').value.trim();
+    if(!username) return alert('Digite um nome');
+    // find or create local visual user
+    let user = state.users.find(x=>x.username===username);
+    if(!user) return alert('Usuário não achado. Use "Cadastrar" para criar.');
+    state.currentUser = user;
+    saveState(state);
+    renderHome();
     renderHeader();
+  };
+  $('authRegisterBtn').onclick = () => {
+    const username = $('authUser').value.trim();
+    if(!username) return alert('Digite um nome');
+    if(state.users.find(x=>x.username===username)) return alert('Nome já existe');
+    const newUser = { username, avatar: 'logo.png', verified: username==='Administrador.EnglishPlay', isAdmin: username==='Administrador.EnglishPlay' };
+    state.users.push(newUser);
+    state.currentUser = newUser;
+    saveState(state);
+    renderHeader(); renderQuestionnaire();
+  };
+  renderHeader();
 }
 
-/* =========================================================
-   AULAS (200)
-   ========================================================= */
-
-function renderLessons() {
-    let grid = document.getElementById("lessonGrid");
-    let u = sessionGet();
-    let html = "";
-
-    for (let i = 1; i <= 200; i++) {
-        let unlocked = i <= (u.unlockedLessons || 0);
-        html += `<button class="lesson-btn ${unlocked ? "" : "locked"}" onclick="lessonClick(${i})">${unlocked ? "Aula " + i : "Bloqueada " + i}</button>`;
-    }
-    grid.innerHTML = html;
-}
-
-function lessonClick(n) {
-    let u = sessionGet();
-
-    if (n <= u.unlockedLessons) {
-        alert("Conteúdo da aula " + n + " (aulas reais serão adicionadas depois)");
-        return;
-    }
-
-    openPayment(n);
-}
-
-/* =========================================================
-   PAGAMENTO SIMULADO
-   ========================================================= */
-
-let currentLesson = null;
-
-function openPayment(n) {
-    currentLesson = n;
-    paymentModal.classList.remove("hidden");
-    overlay.classList.remove("hidden");
-}
-
-function closePayment() {
-    paymentModal.classList.add("hidden");
-    overlay.classList.add("hidden");
-}
-
-function simulatePayment() {
-    let db = dbLoad();
-    let u = sessionGet();
-    let user = db.users.find(x => x.id === u.id);
-
-    user.unlockedLessons = Math.max(user.unlockedLessons, currentLesson);
-    dbSave(db);
-    sessionSet(user);
-
-    showConfetti();
-    showUnlockAnimation();
-
-    closePayment();
-    renderHome();
-}
-
-/* =========================================================
-   PERFIL
-   ========================================================= */
-
-function renderProfile() {
-    let u = sessionGet();
-    if (!u) return renderAuth();
-
-    let db = dbLoad();
-    let best = "-";
-    if (u.bestFriendId) {
-        let friend = db.users.find(x => x.id === u.bestFriendId);
-        best = friend ? friend.username : "-";
-    }
-
-    main.innerHTML = `
+/* ---------- Questionnaire ---------- */
+function renderQuestionnaire(){
+  main.innerHTML = `
     <div class="card">
-        <h2>Perfil</h2>
-
-        <p>Nome: ${escapeHtml(u.username)} ${u.verified ? "✔" : ""}</p>
-        <p>Dias consecutivos: ${u.streak}</p>
-        <p>Pontos acumulados: ${u.points}</p>
-        <p>Melhor amigo: ${best}</p>
-
-        <button class="btn" onclick="renderHome()">Voltar</button>
-    </div>`;
+      <h2>Questionário</h2>
+      <label>Como ficou sabendo?</label><input id="q1" placeholder="Ex: Instagram">
+      <label>Meta diária (dias)</label><input id="q2" placeholder="Ex: 7">
+      <label>Por que aprender?</label><input id="q3" placeholder="Ex: Trabalho">
+      <label>Nível</label>
+      <select id="q4"><option value="nada">Não sei nada</option><option value="pouco">Pouco</option><option value="basico">Básico</option><option value="fluente">Fluente</option></select>
+      <div style="margin-top:10px;text-align:right"><button class="nav-btn" id="finishQBtn">Finalizar</button></div>
+    </div>
+  `;
+  $('finishQBtn').onclick = () => {
+    const u = state.currentUser;
+    if(!u) return renderAuth();
+    u.q = {source:$('q1').value, goal:$('q2').value, reason:$('q3').value, level:$('q4').value};
+    saveState(state);
+    renderHome();
+  };
 }
 
-/* =========================================================
-   ADMIN
-   ========================================================= */
+/* ---------- Home + Zig-zag tree ---------- */
+function renderHome(){
+  const u = state.currentUser;
+  if(!u) return renderAuth();
+  let html = `<div class="card"><h2>Bem-vindo, ${u.username} ${u.verified? '✔':''}</h2>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="nav-btn" onclick="renderProfile()">Perfil</button>
+      <button class="nav-btn" onclick="openChat()">Sr.TV</button>
+      <button class="nav-btn" onclick="renderAdminVisual()">Admin</button>
+    </div></div>`;
 
-function renderAdmin() {
-    let u = sessionGet();
-    if (!u?.isAdmin) return renderHome();
+  html += `<div class="card"><h3>Árvore de Aulas</h3><div class="lesson-tree" id="treeRoot">`;
+  // zig-zag: alternate row alignment (left/right)
+  for(let i=0;i<state.lessons.length;i++){
+    const lesson = state.lessons[i];
+    const left = (i % 2 === 0); // even index on left
+    html += `<div class="row" style="justify-content:${left? 'flex-start':'flex-end'}">`;
+    // spacer + node
+    html += `<div style="width:50px"></div>`;
+    html += `<div class="lesson-node ${lesson.done? 'lesson-done':''} ${lesson.unlocked? '':'lesson-locked'}" data-index="${i}" onclick="onNodeClick(${i})">`;
+    html += lesson.unlocked ? (lesson.done? '✔':'') : '🔒';
+    html += `</div>`;
+    html += `</div>`;
+    // connector (visual)
+    if(i < state.lessons.length-1){
+      html += `<div style="height:12px"></div>`;
+    }
+  }
+  html += `</div></div>`;
+  main.innerHTML = html;
+  renderHeader();
+}
 
-    let db = dbLoad();
+/* ---------- clicking a node ---------- */
+function onNodeClick(index){
+  const lesson = state.lessons[index];
+  if(!lesson.unlocked){
+    openPayment(index);
+    return;
+  }
+  // open lesson modal (simple)
+  const content = state.lessonsContent ? (state.lessonsContent[index+1] || `Conteúdo da aula ${index+1} — demo`) : `Conteúdo da aula ${index+1} — demo`;
+  alert(`Aula ${index+1}\n\n${content}`);
+  // mark done and unlock next (local)
+  lesson.done = true;
+  if(state.lessons[index+1]) state.lessons[index+1].unlocked = true;
+  saveState(state);
+  renderHome();
+}
 
-    let usersHtml = db.users.map(us => `
-        <div class="user-row">
-            <div>${escapeHtml(us.username)} ${us.verified ? "✔" : ""} ${us.banned ? "<span style='color:red'>(Banido)</span>" : ""}</div>
-            <div>
-                ${us.banned ?
-            `<button class="btn small" onclick="unban(${us.id})">Desbanir</button>` :
-            `<button class="btn small" onclick="ban(${us.id})">Banir</button>`}
-            </div>
-        </div>
-    `).join("");
+/* ---------- Payment simulated ---------- */
+let selectedUnlockIndex = null;
+function openPayment(i){
+  selectedUnlockIndex = i;
+  paymentModal.classList.remove('hidden');
+  overlay.classList.remove('hidden');
+}
+function closePayment(){
+  paymentModal.classList.add('hidden');
+  overlay.classList.add('hidden');
+  selectedUnlockIndex = null;
+}
+function simulatePayment(){
+  if(selectedUnlockIndex==null) return;
+  state.lessons[selectedUnlockIndex].unlocked = true;
+  saveState(state);
+  showConfetti();
+  closePayment();
+  renderHome();
+}
 
-    main.innerHTML = `
+/* ---------- Profile ---------- */
+function renderProfile(){
+  const u = state.currentUser;
+  if(!u) return renderAuth();
+  main.innerHTML = `
+    <div class="card profile-card center" style="flex-direction:column">
+      <img src="${u.avatar||'logo.png'}" class="profile-avatar" id="profileAvatar">
+      <h2>${u.username} ${u.verified? '✔':''}</h2>
+      <div style="margin-top:12px">
+        <button class="nav-btn" id="changeAvatarBtn">Trocar foto</button>
+        <button class="nav-btn" id="backHomeBtn">Voltar</button>
+      </div>
+    </div>
+  `;
+  $('changeAvatarBtn').onclick = ()=>{ avatarFile.click(); };
+  $('backHomeBtn').onclick = renderHome;
+}
+
+/* avatar upload handler */
+function handleAvatarFile(e){
+  const file = e.target.files?.[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    const dataUrl = evt.target.result;
+    if(state.currentUser){
+      state.currentUser.avatar = dataUrl;
+      // update in users list
+      const idx = state.users.findIndex(u=>u.username===state.currentUser.username);
+      if(idx>=0) state.users[idx].avatar = dataUrl;
+      saveState(state);
+      renderProfile();
+      renderHeader();
+    }
+  }
+  reader.readAsDataURL(file);
+}
+
+/* ---------- Admin (visual) ---------- */
+function renderAdminVisual(){
+  const u = state.currentUser;
+  if(!u || !u.isAdmin){
+    alert('Painel admin (visual): somente usuários marcados como Administrador.EnglishPlay terão controles avançados.');
+  }
+  // admin visual: editing lessons content JSON (local only)
+  main.innerHTML = `
     <div class="card">
-        <h2>Painel Admin</h2>
-
-        <button class="btn ghost" onclick="renderHome()">Voltar</button>
-
-        <h3 style="margin-top:15px">Usuários</h3>
-        ${usersHtml}
-
-        <h3>Mensagem Global</h3>
-        <textarea id="globalMsg" style="width:100%;height:80px;">${db.globalMessage?.text || ""}</textarea>
-        <button class="btn" onclick="publishGlobal()">Publicar</button>
-
-        <h3 style="margin-top:15px">Editar Aulas (JSON)</h3>
-        <textarea id="lessonEdit" style="width:100%;height:140px;">${JSON.stringify(db.lessons, null, 2)}</textarea>
-        <button class="btn" onclick="saveLessons()">Salvar</button>
-
-        <h3 style="margin-top:15px">Estatísticas</h3>
-        <div id="stats"></div>
-    </div>`;
-
-    renderStats();
-}
-
-function ban(id) {
-    let db = dbLoad();
-    let u = db.users.find(x => x.id === id);
-    if (!u) return;
-    u.banned = true;
-    dbSave(db);
-    renderAdmin();
-}
-
-function unban(id) {
-    let db = dbLoad();
-    let u = db.users.find(x => x.id === id);
-    if (!u) return;
-    u.banned = false;
-    dbSave(db);
-    renderAdmin();
-}
-
-function publishGlobal() {
-    let txt = document.getElementById("globalMsg").value.trim();
-    let db = dbLoad();
-    db.globalMessage = { text: txt, active: true };
-    dbSave(db);
-    alert("Mensagem publicada!");
-}
-
-function saveLessons() {
-    try {
-        let json = JSON.parse(document.getElementById("lessonEdit").value);
-        let db = dbLoad();
-        db.lessons = json;
-        dbSave(db);
-        alert("Aulas salvas!");
-    } catch {
-        alert("JSON inválido");
-    }
-}
-
-function renderStats() {
-    let db = dbLoad();
-    stats.innerHTML = `
-    <p>Total de usuários: ${db.users.length}</p>
-    <p>Banidos: ${db.users.filter(u => u.banned).length}</p>
-    <p>Aulas desbloqueadas somadas: ${db.users.reduce((s, u) => s + u.unlockedLessons, 0)}</p>
-    `;
-}
-
-/* =========================================================
-   SISTEMA DE AMIZADES
-   ========================================================= */
-
-function sendFriendRequest(id) {
-    let u = sessionGet();
-    if (!u) return alert("Entre primeiro.");
-
-    if (id === u.id) return alert("Não pode adicionar você mesmo.");
-
-    let db = dbLoad();
-    let target = db.users.find(x => x.id === id);
-
-    if (!target) return;
-
-    target.friendRequests ||= [];
-
-    if (target.friendRequests.includes(u.id)) {
-        return alert("Pedido já enviado.");
-    }
-
-    target.friendRequests.push(u.id);
-    dbSave(db);
-
-    alert("Pedido enviado!");
-}
-
-function acceptFriend(id) {
-    let db = dbLoad();
-    let u = sessionGet();
-
-    let me = db.users.find(x => x.id === u.id);
-    let other = db.users.find(x => x.id === id);
-
-    me.friends ||= [];
-    other.friends ||= [];
-
-    if (!me.friends.includes(id)) me.friends.push(id);
-    if (!other.friends.includes(me.id)) other.friends.push(me.id);
-
-    other.friendRequests = other.friendRequests.filter(x => x !== me.id);
-
-    dbSave(db);
-    sessionSet(me);
-
-    alert("Agora vocês são amigos!");
-}
-
-/* =========================================================
-   CHAT — IA OFFLINE SR.TV
-   ========================================================= */
-
-function openChat() {
-    chatModal.classList.remove("hidden");
-    overlay.classList.remove("hidden");
-    chatBox.innerHTML = "";
-    appendChatAi("📺 Olá! Sou o Sr.TV. Pergunte qualquer coisa sobre inglês ou sobre o app!");
-}
-
-function closeChat() {
-    chatModal.classList.add("hidden");
-    overlay.classList.add("hidden");
-}
-
-function appendChatUser(t) {
-    let d = document.createElement("div");
-    d.classList.add("chat-bubble", "chat-user");
-    d.innerText = t;
-    chatBox.appendChild(d);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function appendChatAi(t) {
-    let d = document.createElement("div");
-    d.classList.add("chat-bubble", "chat-ai");
-    d.innerText = t;
-    chatBox.appendChild(d);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-sendChat.addEventListener("click", sendChatMessage);
-
-function sendChatMessage() {
-    let text = chatInput.value.trim();
-    if (!text) return;
-
-    appendChatUser(text);
-    chatInput.value = "";
-
-    setTimeout(() => {
-        appendChatAi(srTvBrain(text));
-    }, 300);
-}
-
-/* =========================================================
-   “CÉREBRO” DO SR.TV — IA OFFLINE
-   ========================================================= */
-
-function srTvBrain(msg) {
-    let t = msg.toLowerCase();
-
-    // Saudações
-    if (t.includes("oi") || t.includes("olá") || t.includes("hello")) {
-        return "Olá! Como posso te ajudar hoje? 😄";
-    }
-
-    // Gramática
-    if (t.includes("present perfect")) {
-        return "Present Perfect = have/has + particípio.\nEx: I have studied English.";
-    }
-
-    if (t.includes("past simple") || t.includes("passado simples")) {
-        return "Past Simple fala de ações concluídas no passado.\nEx: I worked yesterday.";
-    }
-
-    if (t.includes("future") || t.includes("futuro")) {
-        return "Future Simple = will + verbo.\nEx: I will learn English.";
-    }
-
-    if (t.includes("do ") || t.includes("does")) {
-        return "Use DO com I/you/we/they.\nUse DOES com he/she/it.";
-    }
-
-    // Significado
-    if (t.includes("o que significa")) {
-        let w = msg.replace(/o que significa/i, "").trim();
-        return `Significado aproximado de "${w}": ${srTvTranslate(w)}`;
-    }
-
-    // Tradução
-    if (t.startsWith("traduza") || t.startsWith("traduz")) {
-        let w = msg.replace(/traduza|traduz/gi, "").trim();
-        return `Tradução de "${w}": ${srTvTranslate(w)}`;
-    }
-
-    // Suporte
-    if (t.includes("erro") || t.includes("não funciona") || t.includes("bug")) {
-        return "Tente atualizar a página (Ctrl+F5). Se continuar, me diga o erro!";
-    }
-
-    if (t.includes("pagar") || t.includes("pix")) {
-        return "Pagamentos reais não funcionam no GitHub Pages. Aqui é simulação. 😉";
-    }
-
-    // fallback
-    return "Não entendi muito bem 🤔\nPergunte sobre inglês, gramática, vocabulário, frases ou suporte!";
-}
-
-function srTvTranslate(word) {
-    let dict = {
-        "hello": "olá",
-        "car": "carro",
-        "dog": "cachorro",
-        "cat": "gato",
-        "love": "amor",
-        "through": "através de",
-        "house": "casa",
-        "school": "escola"
-    };
-    return dict[word.toLowerCase()] || "tradução não disponível no modo offline";
-}
-
-/* =========================================================
-   ANIMAÇÕES
-   ========================================================= */
-
-function showConfetti() {
-    for (let i = 0; i < 25; i++) {
-        let c = document.createElement("div");
-        c.style.position = "fixed";
-        c.style.top = "20px";
-        c.style.left = Math.random() * window.innerWidth + "px";
-        c.style.width = "10px";
-        c.style.height = "10px";
-        c.style.background = ["#f5c518", "#ffd54a", "#fff"][Math.floor(Math.random() * 3)];
-        c.style.opacity = "0.9";
-        c.style.zIndex = "9999";
-        document.body.appendChild(c);
-
-        setTimeout(() => {
-            c.style.transition = "1.2s";
-            c.style.top = window.innerHeight + "px";
-            c.style.opacity = 0;
-            setTimeout(() => c.remove(), 1200);
-        }, 10);
-    }
-}
-
-function showUnlockAnimation() {
-    let box = document.createElement("div");
-    box.className = "modal";
-    box.innerHTML = `
-        <div class="modal-card" style="text-align:center;padding:20px;">
-            <h3>Aula desbloqueada! 🎉</h3>
-        </div>`;
-    document.body.appendChild(box);
-    setTimeout(() => box.remove(), 1500);
-}
-
-/* =========================================================
-   HEADER
-   ========================================================= */
-
-function renderHeader() {
-    let u = sessionGet();
-
-    if (!u) {
-        userArea.innerHTML = `<button class="btn small" onclick="renderAuth()">Entrar</button>`;
-        return;
-    }
-
-    userArea.innerHTML = `
-        <span style="margin-right:10px;">${escapeHtml(u.username)} ${u.verified ? "✔" : ""}</span>
-        <button class="btn small" onclick="renderProfile()">Perfil</button>
-        ${u.isAdmin ? `<button class="btn small" onclick="renderAdmin()">Admin</button>` : ""}
-        <button class="btn small" onclick="openChat()">Sr.TV</button>
-        <button class="btn small" onclick="logout()">Sair</button>
-    `;
-}
-
-function logout() {
-    sessionClear();
-    renderAuth();
-}
-
-/* =========================================================
-   INICIAR APP
-   ========================================================= */
-
-function startApp() {
-    let u = sessionGet();
-    if (u) renderHome();
-    else renderAuth();
-}
-
-startApp();
-/* =====================================================
-   EnglishPlay - Sistema completo (Front-end Only)
-   Desenvolvido para GitHub Pages (SEM backend)
-   ===================================================== */
-
-/* =====================================================
-   UTILITÁRIOS
-   ===================================================== */
-
-const $ = (id) => document.getElementById(id);
-
-function save(key, data) {
-    localStorage.setItem(key, JSON.stringify(data));
-}
-function load(key, fallback) {
-    return JSON.parse(localStorage.getItem(key)) || fallback;
-}
-
-/* =====================================================
-   DADOS INICIAIS
-   ===================================================== */
-
-let users = load("users", []);
-let currentUser = load("currentUser", null);
-
-const DEFAULT_AVATAR = "logo.png";
-
-/* Árvore com 200 aulas */
-const lessons = Array.from({ length: 200 }, (_, i) => ({
-    id: i + 1,
-    unlocked: i < 5,
-    done: false
-}));
-
-save("lessons", lessons);
-
-/* =====================================================
-   LOGIN / CADASTRO
-   ===================================================== */
-
-function renderLogin() {
-    $("main").innerHTML = `
-        <div class="card">
-            <h2>Login</h2>
-            <input id="loginUser" placeholder="Usuário">
-            <button class="btn" onclick="login()">Entrar</button>
-            <button class="btn" onclick="renderRegister()">Criar Conta</button>
+      <h2>Painel Admin (visual)</h2>
+      <div style="margin-top:8px">
+        <textarea id="lessonsEditor" style="width:100%;height:200px">${JSON.stringify(state.lessonsContent||{},null,2)}</textarea>
+        <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="nav-btn" id="saveLessonsBtn">Salvar aulas (local)</button>
+          <button class="nav-btn" id="backHomeAdmin">Voltar</button>
         </div>
-    `;
+      </div>
+    </div>
+  `;
+  $('saveLessonsBtn').onclick = ()=>{
+    try{
+      const parsed = JSON.parse($('lessonsEditor').value);
+      state.lessonsContent = parsed;
+      saveState(state);
+      alert('Aulas salvas localmente.');
+    }catch(e){ alert('JSON inválido.'); }
+  };
+  $('backHomeAdmin').onclick = renderHome;
 }
 
-function login() {
-    const username = $("loginUser").value.trim();
-    const user = users.find(u => u.username === username);
-
-    if (!user) {
-        alert("Usuário não encontrado!");
-        return;
-    }
-
-    currentUser = user;
-    save("currentUser", currentUser);
-
-    renderHome();
+/* ---------- Chat Sr.TV (offline) ---------- */
+function openChat(){
+  chatModal.classList.remove('hidden');
+  overlay.classList.remove('hidden');
+  chatMessages.innerHTML = '';
+  appendAi("Olá! Eu sou o Sr.TV — posso ajudar com gramática, vocabulário e dúvidas do app.");
+}
+function closeChat(){
+  chatModal.classList.add('hidden');
+  overlay.classList.add('hidden');
+}
+function appendUser(text){
+  const d = document.createElement('div'); d.className='msg-user'; d.innerText = text; chatMessages.appendChild(d); chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+function appendAi(text){
+  const d = document.createElement('div'); d.className='msg-ai'; d.innerText = text; chatMessages.appendChild(d); chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+function handleSendChat(){
+  const txt = chatInput.value.trim();
+  if(!txt) return;
+  appendUser(txt);
+  chatInput.value = '';
+  setTimeout(()=>{ appendAi(srTvBrain(txt)); }, 400);
 }
 
-function renderRegister() {
-    $("main").innerHTML = `
-        <div class="card">
-            <h2>Criar Conta</h2>
-            <input id="regUser" placeholder="Usuário">
-            <button class="btn" onclick="register()">Criar</button>
-            <button class="btn" onclick="renderLogin()">Voltar</button>
-        </div>
-    `;
+/* SR.TV brain (offline rules) */
+function srTvBrain(msg){
+  const t = msg.toLowerCase();
+  if(t.includes('oi')||t.includes('olá')) return 'Olá! Em que posso ajudar?';
+  if(t.includes('do/does') || t.includes('do does') || t.includes('does')) return 'Use "do" com I/you/we/they e "does" com he/she/it. Ex: Does she work?';
+  if(t.includes('present perfect')) return 'Present perfect = have/has + past participle. Ex: I have studied.';
+  if(t.includes('traduz') || t.startsWith('tradu') || t.includes('o que significa')) {
+    const w = msg.replace(/(traduz(a|e|ir)?|o que significa)/i,'').trim();
+    if(!w) return 'Diga "traduz X" ou "o que significa X".';
+    return `Tradução aproximada de "${w}": ${srTvTranslate(w)}`;
+  }
+  if(t.includes('pagar')||t.includes('pix')) return 'Pagamentos são simulados aqui. Use "Desbloquear" no modal de pagamento.';
+  if(t.includes('ajuda')||t.includes('help')||t.includes('bug')) return 'Tente atualizar a página (Ctrl+F5). Se o problema persistir, descreva o erro.';
+  return "Desculpe, não entendi bem. Pergunte sobre gramática, tradução ou funcionamento do app.";
+}
+function srTvTranslate(w){
+  const d = {hello:'olá', dog:'cachorro', cat:'gato', through:'através de', house:'casa', school:'escola', apple:'maçã'};
+  return d[w.toLowerCase()] || 'tradução não disponível no dicionário local.';
 }
 
-function register() {
-    const username = $("regUser").value.trim();
-
-    if (users.some(u => u.username === username)) {
-        alert("Nome de usuário já existe!");
-        return;
-    }
-
-    const newUser = {
-        username,
-        avatar: DEFAULT_AVATAR,
-        isAdmin: username === "Administrador.EnglishPlay",
-        banned: false
-    };
-
-    users.push(newUser);
-    save("users", users);
-
-    currentUser = newUser;
-    save("currentUser", newUser);
-
-    renderHome();
+/* ---------- Confetti (visual) ---------- */
+function showConfetti(){
+  for(let i=0;i<20;i++){
+    const el = document.createElement('div'); el.style.position='fixed'; el.style.left=(50+Math.random()*600-300)+'px'; el.style.top='20px'; el.style.width='8px'; el.style.height='12px';
+    el.style.background = ['#ffd54a','#f5c518','#00ff80'][Math.floor(Math.random()*3)];
+    el.style.zIndex=9999; document.body.appendChild(el);
+    setTimeout(()=>{ el.style.transition='1s'; el.style.top=(window.innerHeight-100+Math.random()*200)+'px'; el.style.opacity=0; setTimeout(()=>el.remove(),1100) },10);
+  }
 }
 
-/* =====================================================
-   NAVBAR
-   ===================================================== */
-
-function updateNavbar() {
-    if (!currentUser) {
-        $("userArea").innerHTML = "";
-        return;
-    }
-
-    $("userArea").innerHTML = `
-        <span>Olá, <b>${currentUser.username}</b> ${
-            currentUser.isAdmin ? "✔" : ""
-        }</span>
-
-        <button class="nav-btn" onclick="renderProfile()">Perfil</button>
-
-        ${
-            currentUser.isAdmin
-                ? `<button class="nav-btn" onclick="renderAdmin()">Admin</button>`
-                : ""
-        }
-
-        <button class="nav-btn" onclick="openChat()">Falar (Sr.TV)</button>
-        <button class="nav-btn" onclick="logout()">Sair</button>
-    `;
+/* ---------- Start ---------- */
+function boot(){
+  state = ensureState();
+  // ensure demo user exists
+  if(!state.users.find(u=>u.username==='Junior')) state.users.push({username:'Junior',avatar:'logo.png',verified:false,isAdmin:false});
+  saveState(state);
+  // if currentUser exists in state, set
+  if(state.currentUser) state.currentUser = state.users.find(u=>u.username===state.currentUser.username) || state.currentUser;
+  renderHeader();
+  if(state.currentUser) renderHome(); else renderAuth();
 }
+boot();
 
-function logout() {
-    currentUser = null;
-    save("currentUser", null);
-    renderLogin();
-}
-
-/* =====================================================
-   PÁGINA INICIAL (ÁRVORE ESTILO DUOLINGO)
-   ===================================================== */
-
-function renderHome() {
-    updateNavbar();
-
-    const lessons = load("lessons", []);
-
-    let treeHTML = "";
-
-    lessons.forEach((lesson, index) => {
-        treeHTML += `
-            <div class="lesson-node ${lesson.unlocked ? "" : "lesson-locked"} ${
-            lesson.done ? "lesson-done" : ""
-        }"
-                onclick="clickLesson(${index})"
-            >
-                ${
-                    lesson.unlocked
-                        ? lesson.done
-                            ? "✔"
-                            : "📘"
-                        : "🔒"
-                }
-            </div>
-
-            ${
-                index < lessons.length - 1
-                    ? `<div class="connector"></div>`
-                    : ""
-            }
-        `;
-    });
-
-    $("main").innerHTML = `
-        <div class="card">
-            <h2>Aulas (200)</h2>
-            <div class="lesson-tree">${treeHTML}</div>
-        </div>
-    `;
-}
-
-/* =====================================================
-   AULA — CLICK
-   ===================================================== */
-
-function clickLesson(i) {
-    const lessons = load("lessons", []);
-
-    if (!lessons[i].unlocked) {
-        openPayment(i);
-        return;
-    }
-
-    lessons[i].done = true;
-
-    if (lessons[i + 1]) lessons[i + 1].unlocked = true;
-
-    save("lessons", lessons);
-    renderHome();
-}
-
-/* =====================================================
-   PAGAMENTO (simulado)
-   ===================================================== */
-
-let selectedLesson = null;
-
-function openPayment(i) {
-    selectedLesson = i;
-    $("paymentModal").classList.remove("hidden");
-    $("overlay").classList.remove("hidden");
-}
-
-function closePayment() {
-    $("paymentModal").classList.add("hidden");
-    $("overlay").classList.add("hidden");
-}
-
-function simulateUnlock() {
-    const lessons = load("lessons", []);
-
-    lessons[selectedLesson].unlocked = true;
-
-    save("lessons", lessons);
-    closePayment();
-    renderHome();
-}
-
-/* =====================================================
-   PERFIL
-   ===================================================== */
-
-function renderProfile() {
-    $("main").innerHTML = `
-        <div class="profile-card">
-            <img src="${currentUser.avatar}" class="profile-avatar">
-            <h2>${currentUser.username} ${
-                currentUser.isAdmin ? "✔" : ""
-            }</h2>
-
-            <button class="btn" onclick="changeAvatar()">Trocar foto</button>
-        </div>
-    `;
-}
-
-function changeAvatar() {
-    const newURL = prompt("URL da nova foto:");
-    if (!newURL) return;
-
-    currentUser.avatar = newURL;
-
-    users = users.map(u =>
-        u.username === currentUser.username ? currentUser : u
-    );
-
-    save("users", users);
-    save("currentUser", currentUser);
-
-    renderProfile();
-}
-
-/* =====================================================
-   ADMIN
-   ===================================================== */
-
-function renderAdmin() {
-    if (!currentUser.isAdmin) return;
-
-    let list = "";
-
-    users.forEach(u => {
-        list += `
-            <div class="admin-row">
-                <span>${u.username} ${
-                    u.isAdmin ? "✔" : ""
-                } ${u.banned ? "(Banido)" : ""}</span>
-
-                ${
-                    u.username === "Administrador.EnglishPlay"
-                        ? ""
-                        : u.banned
-                        ? `<button class="admin-unban" onclick="unbanUser('${u.username}')">Desbanir</button>`
-                        : `<button class="admin-ban" onclick="banUser('${u.username}')">Banir</button>`
-                }
-            </div>
-        `;
-    });
-
-    $("main").innerHTML = `
-        <div class="card">
-            <h2>Painel Admin</h2>
-            ${list}
-        </div>
-    `;
-}
-
-function banUser(name) {
-    users = users.map(u =>
-        u.username === name ? { ...u, banned: true } : u
-    );
-    save("users", users);
-    renderAdmin();
-}
-
-function unbanUser(name) {
-    users = users.map(u =>
-        u.username === name ? { ...u, banned: false } : u
-    );
-    save("users", users);
-    renderAdmin();
-}
-
-/* =====================================================
-   CHAT SR.TV
-   ===================================================== */
-
-function openChat() {
-    $("chatModal").classList.remove("hidden");
-    $("overlay").classList.remove("hidden");
-}
-
-function closeChat() {
-    $("chatModal").classList.add("hidden");
-    $("overlay").classList.add("hidden");
-}
-
-function sendChat() {
-    const input = $("chatInput");
-    const text = input.value.trim();
-    if (!text) return;
-
-    appendUser(text);
-    input.value = "";
-
-    setTimeout(() => {
-        respondAI(text);
-    }, 300);
-}
-
-function appendUser(msg) {
-    $("chatMessages").innerHTML += `
-        <div class="msg-user">${msg}</div>
-    `;
-    scrollChat();
-}
-
-function appendAI(msg) {
-    $("chatMessages").innerHTML += `
-        <div class="msg-ai">${msg}</div>
-    `;
-    scrollChat();
-}
-
-function scrollChat() {
-    const box = $("chatMessages");
-    box.scrollTop = box.scrollHeight;
-}
-
-function respondAI(msg) {
-    msg = msg.toLowerCase();
-
-    if (msg.includes("word")) {
-        appendAI("A palavra 'word' significa 'palavra'.");
-    } else if (msg.includes("oi") || msg.includes("olá")) {
-        appendAI("Olá! Como posso ajudar no seu inglês?");
-    } else if (msg.includes("help") || msg.includes("ajuda")) {
-        appendAI("Claro! Você pode me perguntar sobre vocabulário, frases ou gramática.");
-    } else {
-        appendAI("Não entendi exatamente. Pergunte algo sobre inglês, frases, palavras ou gramática!");
-    }
-}
-
-/* =====================================================
-   INICIALIZAÇÃO
-   ===================================================== */
-
-if (!currentUser) {
-    renderLogin();
-} else {
-    renderHome();
-}
-updateNavbar();
-
-/* FIM */
+/* expose some functions to html inline handlers */
+window.renderHome = renderHome;
+window.renderAuth = renderAuth;
+window.renderRegister = renderAuth;
+window.renderProfile = renderProfile;
+window.renderAdminVisual = renderAdminVisual;
+window.openChat = openChat;
+window.closeChat = closeChat;
+window.onNodeClick = onNodeClick;
+window.onNodeClick = onNodeClick;
+window.simulatePayment = simulatePayment;
+window.closePayment = closePayment;
+window.onNodeClick = onNodeClick;
