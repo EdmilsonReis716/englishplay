@@ -689,3 +689,384 @@ function startApp() {
 }
 
 startApp();
+/* =====================================================
+   EnglishPlay - Sistema completo (Front-end Only)
+   Desenvolvido para GitHub Pages (SEM backend)
+   ===================================================== */
+
+/* =====================================================
+   UTILITÁRIOS
+   ===================================================== */
+
+const $ = (id) => document.getElementById(id);
+
+function save(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+}
+function load(key, fallback) {
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+}
+
+/* =====================================================
+   DADOS INICIAIS
+   ===================================================== */
+
+let users = load("users", []);
+let currentUser = load("currentUser", null);
+
+const DEFAULT_AVATAR = "logo.png";
+
+/* Árvore com 200 aulas */
+const lessons = Array.from({ length: 200 }, (_, i) => ({
+    id: i + 1,
+    unlocked: i < 5,
+    done: false
+}));
+
+save("lessons", lessons);
+
+/* =====================================================
+   LOGIN / CADASTRO
+   ===================================================== */
+
+function renderLogin() {
+    $("main").innerHTML = `
+        <div class="card">
+            <h2>Login</h2>
+            <input id="loginUser" placeholder="Usuário">
+            <button class="btn" onclick="login()">Entrar</button>
+            <button class="btn" onclick="renderRegister()">Criar Conta</button>
+        </div>
+    `;
+}
+
+function login() {
+    const username = $("loginUser").value.trim();
+    const user = users.find(u => u.username === username);
+
+    if (!user) {
+        alert("Usuário não encontrado!");
+        return;
+    }
+
+    currentUser = user;
+    save("currentUser", currentUser);
+
+    renderHome();
+}
+
+function renderRegister() {
+    $("main").innerHTML = `
+        <div class="card">
+            <h2>Criar Conta</h2>
+            <input id="regUser" placeholder="Usuário">
+            <button class="btn" onclick="register()">Criar</button>
+            <button class="btn" onclick="renderLogin()">Voltar</button>
+        </div>
+    `;
+}
+
+function register() {
+    const username = $("regUser").value.trim();
+
+    if (users.some(u => u.username === username)) {
+        alert("Nome de usuário já existe!");
+        return;
+    }
+
+    const newUser = {
+        username,
+        avatar: DEFAULT_AVATAR,
+        isAdmin: username === "Administrador.EnglishPlay",
+        banned: false
+    };
+
+    users.push(newUser);
+    save("users", users);
+
+    currentUser = newUser;
+    save("currentUser", newUser);
+
+    renderHome();
+}
+
+/* =====================================================
+   NAVBAR
+   ===================================================== */
+
+function updateNavbar() {
+    if (!currentUser) {
+        $("userArea").innerHTML = "";
+        return;
+    }
+
+    $("userArea").innerHTML = `
+        <span>Olá, <b>${currentUser.username}</b> ${
+            currentUser.isAdmin ? "✔" : ""
+        }</span>
+
+        <button class="nav-btn" onclick="renderProfile()">Perfil</button>
+
+        ${
+            currentUser.isAdmin
+                ? `<button class="nav-btn" onclick="renderAdmin()">Admin</button>`
+                : ""
+        }
+
+        <button class="nav-btn" onclick="openChat()">Falar (Sr.TV)</button>
+        <button class="nav-btn" onclick="logout()">Sair</button>
+    `;
+}
+
+function logout() {
+    currentUser = null;
+    save("currentUser", null);
+    renderLogin();
+}
+
+/* =====================================================
+   PÁGINA INICIAL (ÁRVORE ESTILO DUOLINGO)
+   ===================================================== */
+
+function renderHome() {
+    updateNavbar();
+
+    const lessons = load("lessons", []);
+
+    let treeHTML = "";
+
+    lessons.forEach((lesson, index) => {
+        treeHTML += `
+            <div class="lesson-node ${lesson.unlocked ? "" : "lesson-locked"} ${
+            lesson.done ? "lesson-done" : ""
+        }"
+                onclick="clickLesson(${index})"
+            >
+                ${
+                    lesson.unlocked
+                        ? lesson.done
+                            ? "✔"
+                            : "📘"
+                        : "🔒"
+                }
+            </div>
+
+            ${
+                index < lessons.length - 1
+                    ? `<div class="connector"></div>`
+                    : ""
+            }
+        `;
+    });
+
+    $("main").innerHTML = `
+        <div class="card">
+            <h2>Aulas (200)</h2>
+            <div class="lesson-tree">${treeHTML}</div>
+        </div>
+    `;
+}
+
+/* =====================================================
+   AULA — CLICK
+   ===================================================== */
+
+function clickLesson(i) {
+    const lessons = load("lessons", []);
+
+    if (!lessons[i].unlocked) {
+        openPayment(i);
+        return;
+    }
+
+    lessons[i].done = true;
+
+    if (lessons[i + 1]) lessons[i + 1].unlocked = true;
+
+    save("lessons", lessons);
+    renderHome();
+}
+
+/* =====================================================
+   PAGAMENTO (simulado)
+   ===================================================== */
+
+let selectedLesson = null;
+
+function openPayment(i) {
+    selectedLesson = i;
+    $("paymentModal").classList.remove("hidden");
+    $("overlay").classList.remove("hidden");
+}
+
+function closePayment() {
+    $("paymentModal").classList.add("hidden");
+    $("overlay").classList.add("hidden");
+}
+
+function simulateUnlock() {
+    const lessons = load("lessons", []);
+
+    lessons[selectedLesson].unlocked = true;
+
+    save("lessons", lessons);
+    closePayment();
+    renderHome();
+}
+
+/* =====================================================
+   PERFIL
+   ===================================================== */
+
+function renderProfile() {
+    $("main").innerHTML = `
+        <div class="profile-card">
+            <img src="${currentUser.avatar}" class="profile-avatar">
+            <h2>${currentUser.username} ${
+                currentUser.isAdmin ? "✔" : ""
+            }</h2>
+
+            <button class="btn" onclick="changeAvatar()">Trocar foto</button>
+        </div>
+    `;
+}
+
+function changeAvatar() {
+    const newURL = prompt("URL da nova foto:");
+    if (!newURL) return;
+
+    currentUser.avatar = newURL;
+
+    users = users.map(u =>
+        u.username === currentUser.username ? currentUser : u
+    );
+
+    save("users", users);
+    save("currentUser", currentUser);
+
+    renderProfile();
+}
+
+/* =====================================================
+   ADMIN
+   ===================================================== */
+
+function renderAdmin() {
+    if (!currentUser.isAdmin) return;
+
+    let list = "";
+
+    users.forEach(u => {
+        list += `
+            <div class="admin-row">
+                <span>${u.username} ${
+                    u.isAdmin ? "✔" : ""
+                } ${u.banned ? "(Banido)" : ""}</span>
+
+                ${
+                    u.username === "Administrador.EnglishPlay"
+                        ? ""
+                        : u.banned
+                        ? `<button class="admin-unban" onclick="unbanUser('${u.username}')">Desbanir</button>`
+                        : `<button class="admin-ban" onclick="banUser('${u.username}')">Banir</button>`
+                }
+            </div>
+        `;
+    });
+
+    $("main").innerHTML = `
+        <div class="card">
+            <h2>Painel Admin</h2>
+            ${list}
+        </div>
+    `;
+}
+
+function banUser(name) {
+    users = users.map(u =>
+        u.username === name ? { ...u, banned: true } : u
+    );
+    save("users", users);
+    renderAdmin();
+}
+
+function unbanUser(name) {
+    users = users.map(u =>
+        u.username === name ? { ...u, banned: false } : u
+    );
+    save("users", users);
+    renderAdmin();
+}
+
+/* =====================================================
+   CHAT SR.TV
+   ===================================================== */
+
+function openChat() {
+    $("chatModal").classList.remove("hidden");
+    $("overlay").classList.remove("hidden");
+}
+
+function closeChat() {
+    $("chatModal").classList.add("hidden");
+    $("overlay").classList.add("hidden");
+}
+
+function sendChat() {
+    const input = $("chatInput");
+    const text = input.value.trim();
+    if (!text) return;
+
+    appendUser(text);
+    input.value = "";
+
+    setTimeout(() => {
+        respondAI(text);
+    }, 300);
+}
+
+function appendUser(msg) {
+    $("chatMessages").innerHTML += `
+        <div class="msg-user">${msg}</div>
+    `;
+    scrollChat();
+}
+
+function appendAI(msg) {
+    $("chatMessages").innerHTML += `
+        <div class="msg-ai">${msg}</div>
+    `;
+    scrollChat();
+}
+
+function scrollChat() {
+    const box = $("chatMessages");
+    box.scrollTop = box.scrollHeight;
+}
+
+function respondAI(msg) {
+    msg = msg.toLowerCase();
+
+    if (msg.includes("word")) {
+        appendAI("A palavra 'word' significa 'palavra'.");
+    } else if (msg.includes("oi") || msg.includes("olá")) {
+        appendAI("Olá! Como posso ajudar no seu inglês?");
+    } else if (msg.includes("help") || msg.includes("ajuda")) {
+        appendAI("Claro! Você pode me perguntar sobre vocabulário, frases ou gramática.");
+    } else {
+        appendAI("Não entendi exatamente. Pergunte algo sobre inglês, frases, palavras ou gramática!");
+    }
+}
+
+/* =====================================================
+   INICIALIZAÇÃO
+   ===================================================== */
+
+if (!currentUser) {
+    renderLogin();
+} else {
+    renderHome();
+}
+updateNavbar();
+
+/* FIM */
