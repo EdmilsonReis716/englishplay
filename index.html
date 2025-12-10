@@ -1,56 +1,305 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EnglishPlay</title>
-  <link rel="icon" href="logo.png">
-  <link rel="stylesheet" href="./style.css">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>EnglishPlay — Demo Único</title>
+<style>
+  :root{
+    --bg:#000;--card:#0f0f10;--yellow:#f5c518;--accent:#00d26a;--muted:#9aa0a6;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:Inter,Arial,sans-serif}
+  /* NAV */
+  .navbar{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;background:#090909;border-bottom:3px solid var(--yellow);position:sticky;top:0;z-index:50}
+  .nav-left{display:flex;align-items:center;gap:12px}
+  .logo-svg{width:48px;height:48px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;color:#000;font-weight:900}
+  .brand{color:var(--yellow);font-weight:800;font-size:1.35rem}
+  .nav-right{display:flex;gap:8px;align-items:center}
+  .nav-btn{background:var(--yellow);color:#000;border:none;padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:800}
+  /* main */
+  .container{max-width:1150px;margin:22px auto;padding:0 18px}
+  .card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:18px;border:1px solid rgba(255,255,255,0.03)}
+  /* tree */
+  .lesson-tree{display:flex;flex-direction:column;gap:26px;align-items:center;margin-top:12px;padding-bottom:40px}
+  .row{width:100%;max-width:900px;display:flex;align-items:center;justify-content:space-between}
+  .node{width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#141414;border:4px solid var(--yellow);color:var(--yellow);font-weight:900;font-size:28px;cursor:pointer;transition:transform .15s,box-shadow .15s}
+  .node:hover{transform:translateY(-6px);box-shadow:0 12px 28px rgba(0,0,0,0.7)}
+  .node.done{background:var(--accent);border-color:#00ff80;color:#00220a}
+  .node.locked{background:#222;border-color:#444;color:#777;cursor:default;transform:none;box-shadow:none}
+  .connector{height:18px}
+  /* chat modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:none}
+  .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:210;background:var(--card);border:3px solid var(--yellow);border-radius:12px;width:440px;height:520px;display:flex;flex-direction:column;overflow:hidden; display:none}
+  .modal.open{display:flex}
+  .chat-header{background:var(--yellow);color:#000;padding:10px;display:flex;align-items:center;gap:10px;font-weight:800}
+  .chat-body{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:10px}
+  .chat-input{display:flex;padding:10px;gap:8px}
+  .chat-input input{flex:1;padding:10px;border-radius:8px;border:none;background:#121212;color:#fff}
+  .msg-user{align-self:flex-end;background:var(--yellow);color:#000;padding:10px;border-radius:10px;max-width:75%}
+  .msg-ai{align-self:flex-start;background:#141414;color:#fff;padding:10px;border-radius:10px;max-width:75%}
+  .btn-send{padding:10px 14px;border-radius:8px;border:none;background:var(--yellow);color:#000;font-weight:800}
+  /* payment modal */
+  .payment{width:420px;padding:16px;border-radius:10px;background:var(--card);border:3px solid var(--yellow);display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:220}
+  .payment.open{display:block}
+  /* profile */
+  .profile-avatar{width:120px;height:120px;border-radius:50%;border:4px solid var(--yellow);object-fit:cover}
+  /* responsive */
+  @media(max-width:860px){ .node{width:78px;height:78px;font-size:22px} .modal{width:92%;height:62vh} .payment{width:92%} }
+</style>
 </head>
 <body>
   <header class="navbar">
     <div class="nav-left">
-      <img src="logo.png" alt="EnglishPlay" class="logo-small">
-      <div class="site-title"><span class="brand">EnglishPlay</span></div>
+      <div class="logo-svg" aria-hidden="true">TV</div>
+      <div>
+        <div class="brand">EnglishPlay</div>
+        <div style="font-size:12px;color:#9aa0a6">Seu portal de estudos</div>
+      </div>
     </div>
-    <div id="userArea" class="nav-right"></div>
+    <div id="userArea" class="nav-right">
+      <!-- preenchido pelo script -->
+    </div>
   </header>
 
-  <main id="main" class="main-container"></main>
+  <main class="container" id="main">
+    <!-- render pelo script -->
+  </main>
 
-  <!-- Chat Modal (Sr.TV) -->
-  <div id="overlay" class="overlay hidden"></div>
+  <div id="overlay" class="overlay"></div>
 
-  <div id="chatModal" class="modal hidden">
-    <div class="chat-box">
-      <div class="chat-header">
-        <img src="logo.png" class="chat-logo" alt="Sr.TV">
-        <div class="chat-title">Sr. TV — Suporte & IA</div>
-        <button class="close-btn" id="closeChatBtn">✖</button>
-      </div>
-      <div id="chatMessages" class="chat-messages"></div>
-      <div class="chat-input-area">
-        <input id="chatInput" placeholder="Escreva sua dúvida..." />
-        <button id="sendChatBtn" class="btn-send">Enviar</button>
-      </div>
+  <!-- Chat Modal -->
+  <div id="chatModal" class="modal" role="dialog" aria-hidden="true">
+    <div class="chat-header">
+      <div style="width:40px;height:40px;border-radius:50%;background:#000;color:var(--yellow);display:flex;align-items:center;justify-content:center;font-weight:800">TV</div>
+      <div>Sr. TV — Suporte & IA</div>
+      <button id="closeChat" style="margin-left:auto;background:#000;border:none;color:var(--yellow);padding:6px 10px;border-radius:8px;cursor:pointer">Fechar</button>
+    </div>
+    <div id="chatBody" class="chat-body"></div>
+    <div class="chat-input">
+      <input id="chatInput" placeholder="Escreva sua dúvida..." />
+      <button id="sendBtn" class="btn-send">Enviar</button>
     </div>
   </div>
 
-  <!-- Payment Modal (simulado) -->
-  <div id="paymentModal" class="modal hidden">
-    <div class="payment-box">
-      <h2>Desbloquear Aula (Simulado)</h2>
-      <p>Na versão pública os pagamentos são simulados. Você pode desbloquear a aula localmente.</p>
-      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
-        <button id="simulatePayBtn" class="btn-unlock">Simular pagamento</button>
-        <button id="closePayBtn" class="close-btn">Fechar</button>
-      </div>
+  <!-- Payment modal -->
+  <div id="paymentModal" class="payment" role="dialog" aria-hidden="true">
+    <h3 style="color:var(--yellow)">Desbloquear Aula (simulado)</h3>
+    <p>Pagamento simulado. Clique para desbloquear localmente.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button id="payConfirm" class="btn-send">Simular pagamento</button>
+      <button id="payClose" style="background:#000;border:none;color:var(--yellow);padding:8px 12px;border-radius:8px">Fechar</button>
     </div>
   </div>
 
-  <!-- Avatar input hidden -->
-  <input id="avatarFile" type="file" accept="image/*" style="display:none">
+<script>
+/* ---------- Simple single-file app (guaranteed to run) ---------- */
+(function(){
+  // state persisted in localStorage
+  const KEY = 'englishplay_single_v1';
+  const defaultState = {
+    users: [],
+    currentUser: null,
+    lessons: Array.from({length:200}, (_,i)=>({ id:i+1, unlocked: i<5, done:false })),
+    lessonsContent: {}
+  };
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || structuredClone(defaultState) }catch(e){ return structuredClone(defaultState)}}
+  function save(s){ localStorage.setItem(KEY, JSON.stringify(s)) }
 
-  <script src="./script.js"></script>
+  let state = load();
+
+  // basic DOM refs
+  const main = document.getElementById('main');
+  const userArea = document.getElementById('userArea');
+  const overlay = document.getElementById('overlay');
+  const chatModal = document.getElementById('chatModal');
+  const chatBody = document.getElementById('chatBody');
+  const chatInput = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const closeChat = document.getElementById('closeChat');
+  const paymentModal = document.getElementById('paymentModal');
+  const payConfirm = document.getElementById('payConfirm');
+  const payClose = document.getElementById('payClose');
+
+  // helper render header
+  function renderHeader(){
+    const u = state.currentUser;
+    if(!u){
+      userArea.innerHTML = '<button id="enterBtn" class="nav-btn">Entrar / Cadastrar</button>';
+      document.getElementById('enterBtn').onclick = renderAuth;
+    } else {
+      userArea.innerHTML = \`
+        <span style="margin-right:8px">Olá, <b>\${u.username}</b> \${u.verified? '✔':''}</span>
+        <button id="btnProfile" class="nav-btn">Perfil</button>
+        <button id="btnChat" class="nav-btn">Falar (Sr.TV)</button>
+        <button id="btnLogout" class="nav-btn">Sair</button>
+      \`;
+      document.getElementById('btnProfile').onclick = renderProfile;
+      document.getElementById('btnChat').onclick = openChat;
+      document.getElementById('btnLogout').onclick = ()=>{ state.currentUser=null; save(state); renderAuth(); renderHeader(); }
+    }
+  }
+
+  // auth (visual-local)
+  function renderAuth(){
+    main.innerHTML = \`
+      <div class="card">
+        <h2>Entrar / Cadastrar</h2>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <input id="authUser" placeholder="Nome de usuário" />
+          <button id="loginBtn" class="nav-btn">Entrar</button>
+          <button id="regBtn" class="nav-btn">Cadastrar</button>
+        </div>
+        <p style="color:var(--muted);margin-top:10px">Contas são locais ao navegador nessa demo.</p>
+      </div>
+    \`;
+    document.getElementById('loginBtn').onclick = ()=>{
+      const name = document.getElementById('authUser').value.trim();
+      if(!name) return alert('Digite um nome');
+      const user = state.users.find(u=>u.username===name);
+      if(!user) return alert('Usuário não encontrado. Cadastre primeiro.');
+      state.currentUser = user; save(state); renderHome(); renderHeader();
+    };
+    document.getElementById('regBtn').onclick = ()=>{
+      const name = document.getElementById('authUser').value.trim();
+      if(!name) return alert('Digite um nome');
+      if(state.users.find(u=>u.username===name)) return alert('Nome já existe');
+      const newUser = { username:name, avatar:null, verified: name==='Administrador.EnglishPlay', isAdmin: name==='Administrador.EnglishPlay' };
+      state.users.push(newUser); state.currentUser=newUser; save(state);
+      renderQuestionnaire(); renderHeader();
+    };
+  }
+
+  function renderQuestionnaire(){
+    main.innerHTML = \`
+      <div class="card">
+        <h2>Questionário</h2>
+        <label>Como ficou sabendo?</label><input id="q1" /><label>Meta diária</label><input id="q2" /><label>Por que aprender?</label><input id="q3" /><label>Nível</label><select id="q4"><option>Não sei</option><option>Pouco</option><option>Básico</option><option>Fluente</option></select>
+        <div style="text-align:right;margin-top:10px"><button id="finishQ" class="nav-btn">Finalizar</button></div>
+      </div>
+    \`;
+    document.getElementById('finishQ').onclick = ()=>{
+      const u = state.currentUser; if(!u) return;
+      u.q = { source:document.getElementById('q1').value, goal:document.getElementById('q2').value, reason:document.getElementById('q3').value, level:document.getElementById('q4').value };
+      save(state); renderHome(); renderHeader();
+    };
+  }
+
+  // home + zig-zag tree (one per row)
+  function renderHome(){
+    if(!state.currentUser) return renderAuth();
+    let html = '<div class="card"><h2>Bem-vindo, '+state.currentUser.username + (state.currentUser.verified? ' ✔':'') +'</h2>';
+    html += '<div style="display:flex;gap:10px;margin-top:10px"><button class="nav-btn" onclick="renderProfileInline()">Perfil</button><button class="nav-btn" onclick="openChatInline()">Sr.TV</button></div></div>';
+    html += '<div class="card"><h3>Árvore de aulas (200)</h3><div class="lesson-tree">';
+    for(let i=0;i<state.lessons.length;i++){
+      const lesson = state.lessons[i];
+      const left = (i%2===0);
+      html += '<div class="row" style="justify-content:'+ (left? 'flex-start':'flex-end') +'">';
+      html += '<div style="width:40px"></div>';
+      html += '<div class="node '+ (lesson.done? 'done':'') +' '+ (lesson.unlocked? '':'locked') +'" data-index="'+i+'" onclick="onNodeClickInline('+i+')">'+ (lesson.unlocked? (lesson.done? '✔' : (i+1)) : '🔒') +'</div>';
+      html += '</div><div class="connector"></div>';
+    }
+    html += '</div></div>';
+    main.innerHTML = html;
+    renderHeader();
+  }
+
+  // node click handler
+  window.onNodeClickInline = function(i){
+    const lesson = state.lessons[i];
+    if(!lesson.unlocked){ openPayment(i); return; }
+    // open "lesson" demo
+    alert('Aula '+(i+1)+' — Demo.\nFeche para marcar como concluída.');
+    lesson.done = true;
+    if(state.lessons[i+1]) state.lessons[i+1].unlocked = true;
+    save(state); renderHome();
+  };
+
+  // payment (simulated)
+  let unlockIndex = null;
+  function openPayment(i){
+    unlockIndex = i;
+    paymentModal.classList.add('open');
+    overlay.style.display='block';
+  }
+  function closePayment(){ unlockIndex=null; paymentModal.classList.remove('open'); overlay.style.display='none' }
+  payClose.onclick = closePayment;
+  payConfirm.onclick = function(){
+    if(unlockIndex==null) return;
+    state.lessons[unlockIndex].unlocked = true; save(state);
+    showConfetti(); closePayment(); renderHome();
+  };
+
+  // profile
+  function renderProfileInline(){
+    const u = state.currentUser;
+    if(!u) return renderAuth();
+    main.innerHTML = '<div class="card" style="text-align:center"><img src="'+(u.avatar||'')+'" onerror="this.style.display=\\'none\\'" class="profile-avatar" id="profileImg"><h2>'+u.username + (u.verified? ' ✔':'') +'</h2><div style="margin-top:12px"><button class="nav-btn" id="changeAvatarBtn">Trocar foto</button><button class="nav-btn" onclick="renderHome()">Voltar</button></div></div>';
+    document.getElementById('changeAvatarBtn').onclick = ()=>{
+      const url = prompt('Cole URL da imagem (ou deixe em branco):');
+      if(url){ state.currentUser.avatar = url; save(state); renderProfileInline(); renderHeader(); }
+    };
+  }
+  window.renderProfileInline = renderProfileInline;
+
+  // admin visual
+  function renderAdminVisual(){
+    if(!state.currentUser || !state.currentUser.isAdmin) return alert('Somente Administrador.EnglishPlay (visual)');
+    main.innerHTML = '<div class="card"><h2>Painel Admin (visual)</h2><textarea id="lessonEditor" style="width:100%;height:200px">'+JSON.stringify(state.lessonsContent||{},null,2)+'</textarea><div style="text-align:right;margin-top:8px"><button id="saveLessons" class="nav-btn">Salvar</button><button onclick="renderHome()" class="nav-btn">Voltar</button></div></div>';
+    document.getElementById('saveLessons').onclick = ()=>{
+      try{ state.lessonsContent = JSON.parse(document.getElementById('lessonEditor').value); save(state); alert('Aulas salvas (local).') }catch(e){ alert('JSON inválido') }
+    };
+  }
+
+  // chat — offline Sr.TV
+  function openChatInline(){ chatModal.classList.add('open'); overlay.style.display='block'; chatBody.innerHTML=''; appendAi('Olá! Sou o Sr.TV — posso ajudar com gramática, vocabulário e suporte.') }
+  function closeChatInline(){ chatModal.classList.remove('open'); overlay.style.display='none' }
+  function appendUser(msg){ const d=document.createElement('div'); d.className='msg-user'; d.innerText=msg; chatBody.appendChild(d); chatBody.scrollTop=chatBody.scrollHeight; }
+  function appendAi(msg){ const d=document.createElement('div'); d.className='msg-ai'; d.innerText=msg; chatBody.appendChild(d); chatBody.scrollTop=chatBody.scrollHeight; }
+  sendBtn.onclick = ()=>{ const t=chatInput.value.trim(); if(!t) return; appendUser(t); chatInput.value=''; setTimeout(()=>appendAi(srTv(t)), 350) }
+  closeChat.onclick = closeChatInline;
+  window.openChatInline = openChatInline;
+  window.openChat = openChatInline;
+  window.renderAdminVisual = renderAdminVisual;
+  window.renderHome = renderHome;
+  window.renderAuth = renderAuth;
+
+  // sr.tv brain (simple)
+  function srTv(text){
+    const t = text.toLowerCase();
+    if(t.includes('oi')||t.includes('olá')) return 'Olá! Em que posso ajudar?';
+    if(t.includes('present perfect')) return 'Present Perfect = have/has + past participle. Ex: I have studied.';
+    if(t.includes('do/does')||t.includes('does')) return 'Use DO com I/you/we/they e DOES com he/she/it.';
+    if(t.includes('significa')||t.includes('what does')) {
+      const w = text.replace(/.*significa\\s*/i,'').trim();
+      return w? ('Tradução aproximada de \"'+w+'\": (dicionário local)') : 'Diga "o que significa X"';
+    }
+    if(t.includes('erro')||t.includes('bug')) return 'Tente atualizar a página (Ctrl+F5). Descreva o erro se continuar.';
+    return 'Desculpe, não entendi. Pergunte sobre gramática, tradução, ou sobre o app.';
+  }
+
+  // confetti visual
+  function showConfetti(){
+    for(let i=0;i<20;i++){
+      const e=document.createElement('div'); e.style.position='fixed'; e.style.left=(50+Math.random()*600-300)+'px'; e.style.top='20px'; e.style.width='8px'; e.style.height='12px'; e.style.background=['#ffd54a','#f5c518','#00ff80'][Math.floor(Math.random()*3)]; e.style.zIndex=9999; document.body.appendChild(e);
+      setTimeout(()=>{ e.style.transition='1s'; e.style.top=(window.innerHeight-50+Math.random()*150)+'px'; e.style.opacity=0; setTimeout(()=>e.remove(),1100) },10);
+    }
+  }
+
+  // boot
+  function boot(){
+    // ensure demo user
+    if(!state.users.find(u=>u.username==='Junior')) state.users.push({ username:'Junior', avatar:null, verified:false, isAdmin:false });
+    save(state);
+    renderHeader();
+    if(state.currentUser) renderHome(); else renderAuth();
+  }
+  boot();
+
+  // expose some functions to global for inline onclick usage
+  window.onNodeClickInline = window.onNodeClickInline || function(i){};
+  window.renderAdminVisual = renderAdminVisual;
+})();
+</script>
 </body>
 </html>
