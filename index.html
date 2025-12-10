@@ -242,4 +242,69 @@ function openChat(){ alert('Sr.TV: (simulado) Pergunte sobre inglês ou suporte.
 })();
 </script>
 </body>
+</html><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnglishPlay</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Logo -->
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <header class="navbar">
+        <div class="nav-left">
+            <img src="logo.png" class="logo-small" alt="EnglishPlay Logo">
+            <span class="site-name">EnglishPlay</span>
+        </div>
+
+        <div id="userArea" class="nav-right">
+            <!-- Preenchido pelo script.js -->
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main id="main" class="main-container">
+        <!-- Renderizado pelo script.js -->
+    </main>
+
+    <!-- CHAT SR.TV -->
+    <div id="chatModal" class="modal hidden">
+        <div class="chat-box">
+            <div class="chat-header">
+                <img src="logo.png" class="chat-logo">
+                <span>Sr. TV — Suporte & IA</span>
+                <button class="close-btn" onclick="closeChat()">✖</button>
+            </div>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input-area">
+                <input id="chatInput" placeholder="Digite sua mensagem...">
+                <button class="btn-send" onclick="sendChat()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PAGAMENTO -->
+    <div id="paymentModal" class="modal hidden">
+        <div class="payment-box">
+            <h2>Desbloquear Aula</h2>
+            <p>Este conteúdo é premium. O desbloqueio está simulado.</p>
+            <button class="btn-unlock" onclick="simulateUnlock()">Desbloquear</button>
+            <button class="close-btn" onclick="closePayment()">Fechar</button>
+        </div>
+    </div>
+
+    <!-- OVERLAY -->
+    <div id="overlay" class="overlay hidden"></div>
+
+    <!-- SCRIPT -->
+    <script src="script.js"></script>
+</body>
 </html>
+
