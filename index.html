@@ -1,103 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EnglishPlay</title>
-
-    <link rel="stylesheet" href="style.css">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>EnglishPlay — Início</title>
+<link rel="stylesheet" href="style.css">
 </head>
+<body class="page">
 
-<body class="page fade-in">
-
-    <!-- NAVBAR -->
-    <header class="navbar">
-        <div class="nav-left">
-            <img src="logo.png" class="logo-small" />
-            <div class="brand-area">
-                <h1 class="brand">EnglishPlay</h1>
-                <span class="subtitle">Seu portal de estudos</span>
-            </div>
-        </div>
-
-        <div class="nav-middle">
-            <input id="searchUsers" placeholder="Pesquisar usuários..." />
-            <div id="searchResults" class="search-results hidden"></div>
-        </div>
-
-        <div id="userArea" class="nav-right"></div>
-    </header>
-
-    <!-- CONTEÚDO -->
-    <main class="main-layout">
-
-        <aside id="sidebar" class="sidebar card"></aside>
-
-        <section class="sessions-area" id="sessionsArea">
-            <!-- SESSÕES GERADAS PELO SCRIPT -->
-        </section>
-
-    </main>
-
-    <!-- OVERLAY (para modais) -->
-    <div id="overlay" class="overlay hidden"></div>
-
-    <!-- LOGIN / CADASTRO -->
-    <div id="authModal" class="modal hidden">
-        <div class="modal-card scale-in">
-            <h2>Entrar / Cadastrar</h2>
-
-            <input id="authUser" placeholder="Nome de usuário" />
-            <input id="authPass" type="password" placeholder="Senha" />
-
-            <div class="row">
-                <button id="authLoginBtn" class="btn">Entrar</button>
-                <button id="authRegisterBtn" class="btn ghost">Cadastrar</button>
-            </div>
-        </div>
+<header class="navbar">
+  <div class="nav-left">
+    <img src="logo.png" class="logo-small" alt="Logo">
+    <div class="brand-area">
+      <div class="brand">EnglishPlay</div>
+      <div class="subtitle">Seu portal de estudos</div>
     </div>
+  </div>
 
-    <!-- QUESTIONÁRIO -->
-    <div id="questionModal" class="modal hidden">
-        <div class="modal-card scale-in">
-            <h2>Questionário</h2>
+  <div class="nav-middle">
+    <input id="searchUsers" placeholder="Pesquisar usuários..." />
+    <div id="searchResults" class="search-results hidden"></div>
+  </div>
 
-            <label>Como ficou sabendo do EnglishPlay?</label>
-            <select id="q_source">
-                <option>Instagram</option>
-                <option>TikTok</option>
-                <option>Amigos</option>
-                <option>Outro</option>
-            </select>
+  <div id="navRight" class="nav-right">
+    <button id="openAuth" class="btn ghost">Login / Criar</button>
+  </div>
+</header>
 
-            <label>Meta diária</label>
-            <select id="q_days">
-                <option value="3">3 dias</option>
-                <option value="7" selected>7 dias</option>
-                <option value="14">14 dias</option>
-                <option value="30">30 dias</option>
-            </select>
+<main class="main-layout">
+  <aside id="sidebar" class="sidebar card"></aside>
 
-            <label>Objetivo</label>
-            <select id="q_reason">
-                <option>Estudos</option>
-                <option>Trabalho</option>
-                <option>Viagem</option>
-                <option>Lazer</option>
-            </select>
+  <section id="sessionsArea" class="sessions-area">
+    <!-- sessões geradas pelo script -->
+  </section>
+</main>
 
-            <label>Nível atual</label>
-            <div class="radio-row">
-                <label><input type="radio" name="q_level" value="nada" checked> Nada</label>
-                <label><input type="radio" name="q_level" value="pouco"> Pouco</label>
-                <label><input type="radio" name="q_level" value="basico"> Básico</label>
-                <label><input type="radio" name="q_level" value="fluente"> Fluente</label>
-            </div>
+<!-- small overlay modals -->
+<div id="overlay" class="overlay hidden"></div>
 
-            <button id="finishQuestion" class="btn">Finalizar</button>
-        </div>
+<!-- auth modal (progressive fallback) -->
+<div id="authModal" class="modal hidden">
+  <div class="modal-card">
+    <h2>Entrar / Criar conta</h2>
+    <input id="authUser" placeholder="Nome de usuário" />
+    <input id="authPass" type="password" placeholder="Senha" />
+    <div class="row">
+      <button id="authLoginBtn" class="btn">Entrar</button>
+      <button id="authRegisterBtn" class="btn ghost">Criar conta</button>
     </div>
+    <p class="note">Ao criar conta você será redirecionado ao questionário.</p>
+    <button id="authClose" class="btn ghost">Fechar</button>
+  </div>
+</div>
 
-    <script src="script.js"></script>
+<!-- PIX modal (aparece ao desbloquear sessão) -->
+<div id="pixModal" class="modal hidden">
+  <div class="modal-card">
+    <h2>Desbloquear sessão — PIX</h2>
+    <p>Envie o PIX para a chave abaixo e confirme.</p>
+    <div class="pix-box">
+      <div id="pixKey" class="pix-key">00020126580014BR.GOV.BCB.PIX0136d9b1e...63047198</div>
+      <button id="copyPix" class="btn">Copiar chave</button>
+    </div>
+    <p class="note">Envie e depois clique em "Confirmar pagamento". (Webhook não implementado — confirmar manualmente)</p>
+    <div class="row">
+      <button id="confirmPix" class="btn">Confirmar pagamento</button>
+      <button id="closePix" class="btn ghost">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
