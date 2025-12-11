@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>EnglishPlay</title>
   <link rel="icon" href="logo.png">
   <link rel="stylesheet" href="style.css">
@@ -10,54 +10,104 @@
 <body>
   <header class="navbar">
     <div class="nav-left">
-      <img src="logo.png" alt="EnglishPlay" class="logo-small" id="logoTop">
+      <img src="logo.png" class="logo-small" alt="EnglishPlay" />
       <div>
         <div class="brand">EnglishPlay</div>
         <div class="subtitle">Seu portal de estudos</div>
       </div>
+      <div class="flame" aria-hidden="true"></div>
+    </div>
+
+    <div class="nav-middle">
+      <input id="searchUsers" placeholder="Pesquisar usuários (amigos)..." />
+      <div id="searchResults" class="search-results hidden"></div>
     </div>
 
     <div id="userArea" class="nav-right"></div>
   </header>
 
-  <main id="main" class="main-container"></main>
+  <main class="container">
+    <aside class="sidebar card" id="sidebar">
+      <!-- perfil / progresso -->
+    </aside>
 
-  <!-- Overlay -->
-  <div id="overlay" class="overlay hidden"></div>
-
-  <!-- Chat Modal (Sr.TV) -->
-  <div id="chatModal" class="modal hidden" role="dialog" aria-hidden="true">
-    <div class="chat-box">
-      <div class="chat-header">
-        <img src="logo.png" class="chat-logo" alt="Sr.TV">
-        <div class="chat-title">Sr. TV — Suporte & IA</div>
-        <button class="close-btn" id="closeChatBtn">Fechar</button>
+    <section class="content">
+      <!-- questionnaire modal will show on register -->
+      <div id="topControls" class="card top-controls">
+        <div class="control-left">
+          <button class="btn rounded" id="btnCreate">Criar Conta</button>
+          <button class="btn rounded ghost" id="btnLogin">Entrar</button>
+        </div>
+        <div class="control-right">
+          <select id="viewFilter" class="pill">
+            <option value="all">Todas as aulas</option>
+            <option value="locked">Bloqueadas</option>
+            <option value="done">Concluídas</option>
+          </select>
+        </div>
       </div>
-      <div id="chatMessages" class="chat-messages"></div>
-      <div class="chat-input-area">
-        <input id="chatInput" placeholder="Escreva sua dúvida..." autocomplete="off" />
-        <button id="sendChatBtn" class="btn-send">Enviar</button>
+
+      <div class="card">
+        <h3>Aulas — Clique para abrir</h3>
+        <div id="lessonsGrid" class="lessons-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Questionnaire Modal -->
+  <div id="questionModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Questionário</h3>
+      <label>Como ficou sabendo do EnglishPlay?</label>
+      <select id="q_source">
+        <option>Instagram</option>
+        <option>TikTok</option>
+        <option>Amigos</option>
+        <option>Outro</option>
+      </select>
+
+      <label>Meta diária de dias consecutivos</label>
+      <select id="q_days">
+        <option value="3">3</option>
+        <option value="7" selected>7</option>
+        <option value="14">14</option>
+        <option value="30">30</option>
+      </select>
+
+      <label>Para que quer aprender inglês?</label>
+      <select id="q_reason">
+        <option>Estudos</option>
+        <option>Trabalho</option>
+        <option>Viagem</option>
+        <option>Lazer</option>
+      </select>
+
+      <label>Quanto você entende de inglês?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="q_level" value="nada" checked/> Nada</label>
+        <label><input type="radio" name="q_level" value="pouco"/> Pouco</label>
+        <label><input type="radio" name="q_level" value="basico"/> Básico</label>
+        <label><input type="radio" name="q_level" value="fluente"/> Fluente</label>
+      </div>
+
+      <div style="text-align:right;margin-top:10px">
+        <button class="btn rounded" id="finishQuestion">Finalizar</button>
       </div>
     </div>
   </div>
 
-  <!-- Payment Modal (simulado) -->
-  <div id="paymentModal" class="modal hidden">
-    <div class="payment-box">
-      <h2>Desbloquear Aula</h2>
-      <p>Este é um desbloqueio simulado para demonstração. No app real usaremos Mercado Pago + webhook.</p>
-      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
-        <button id="simulatePayBtn" class="btn-unlock">Simular pagamento</button>
-        <button id="closePayBtn" class="close-btn">Fechar</button>
+  <!-- Login/Register Modal -->
+  <div id="authModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Entrar / Cadastrar (local)</h3>
+      <input id="authUser" placeholder="Nome de usuário">
+      <input id="authPass" placeholder="Senha" type="password">
+      <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
+        <button class="btn rounded" id="authLoginBtn">Entrar</button>
+        <button class="btn rounded ghost" id="authRegisterBtn">Cadastrar</button>
       </div>
     </div>
   </div>
-
-  <!-- Unlock animation container -->
-  <div id="unlockAnim" class="unlock-anim hidden"></div>
-
-  <!-- Hidden file input for avatar -->
-  <input id="avatarFile" accept="image/*" type="file" style="display:none">
 
   <script src="script.js"></script>
 </body>
