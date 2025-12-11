@@ -1,134 +1,323 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Aula — EnglishPlay</title>
-<link rel="stylesheet" href="style.css">
-<style>
-.lesson-container{max-width:900px;margin:26px auto;padding:18px;background:var(--card);border-radius:12px;border:2px solid var(--yellow)}
-.progress-wrapper{height:12px;background:#0b0b0b;border-radius:999px;overflow:hidden;margin-bottom:12px}
-.progress-bar{height:12px;background:linear-gradient(90deg,var(--yellow),#ffdf57);width:0%}
-.exercise{padding:18px;background:#0d0d0d;border-radius:10px;border:1px solid #222}
-.options-grid{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.opt-btn{padding:10px;border-radius:10px;border:2px solid #222;background:#111;color:var(--white);cursor:pointer}
-.opt-btn.selected{border-color:var(--yellow);box-shadow:0 0 12px var(--yellow-glow)}
-.correctFlash{animation:correctFlash .9s}
-@keyframes correctFlash{0%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 30px rgba(0,255,128,0.18)}100%{box-shadow:0 0 0 transparent}}
-.wrongFlash{animation:wrongFlash .9s}
-@keyframes wrongFlash{0%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 30px rgba(255,0,0,0.18)}100%{box-shadow:0 0 0 transparent}}
-.finish-btn{margin-top:14px}
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aula — EnglishPlay</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="storage.js" defer></script>
+    <script src="lessons.js" defer></script>
+    <script src="mascotes.js" defer></script>
+
+    <style>
+        .lesson-container {
+            max-width: 900px;
+            margin: 140px auto;
+            padding: 30px;
+            background: #111;
+            border-radius: 25px;
+            border: 3px solid #ffcc00;
+            animation: fadeIn .4s ease;
+        }
+
+        .lesson-title {
+            font-size: 30px;
+            font-weight: 700;
+            color: #ffcc00;
+            margin-bottom: 20px;
+        }
+
+        .lesson-block {
+            background: #0c0c0c;
+            padding: 25px;
+            border-radius: 20px;
+            border: 2px solid #333;
+        }
+
+        .mascot-lesson {
+            width: 110px;
+            margin: 0 auto 15px auto;
+            display: block;
+            animation: float 2s infinite ease-in-out;
+        }
+
+        #dragArea .word {
+            display: inline-block;
+            background: #ffcc00;
+            color: black;
+            padding: 10px 15px;
+            border-radius: 25px;
+            margin: 8px;
+            font-weight: 600;
+            cursor: grab;
+            transition: transform .2s ease;
+        }
+
+        #dragArea .word:hover {
+            transform: scale(1.1);
+        }
+
+        #dropZone {
+            margin-top: 20px;
+            min-height: 70px;
+            padding: 15px;
+            border: 2px dashed #555;
+            border-radius: 15px;
+        }
+
+        .option-btn {
+            width: 100%;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 15px;
+            background: #1a1a1a;
+            color: white;
+            font-weight: 600;
+            border: 2px solid #333;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .option-btn:hover {
+            border-color: #ffcc00;
+            transform: scale(1.03);
+        }
+
+        .input-write {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 12px;
+            border: 2px solid #333;
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .progress-bar {
+            height: 14px;
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #222;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #ffcc00, #ffe680);
+            transition: .4s ease;
+        }
+
+        .finish-box {
+            text-align: center;
+            padding: 20px;
+            background: #0c0c0c;
+            border-radius: 20px;
+            margin-top: 20px;
+            border: 2px solid #333;
+        }
+    </style>
 </head>
-<body class="page">
+
+<body>
 
 <header class="navbar">
-  <div class="nav-left">
-    <img src="logo.png" class="logo-small" />
-    <div class="brand-area"><div class="brand">EnglishPlay</div><div class="subtitle">Aula</div></div>
-  </div>
-  <div class="nav-middle"></div>
-  <div class="nav-right"><button class="btn ghost" onclick="location.href='index.html'">Voltar</button></div>
+    <div class="navbar-left">
+        <img src="logo.png" class="nav-logo" />
+        <span class="nav-title">EnglishPlay</span>
+    </div>
+
+    <div class="navbar-right">
+        <button class="btn-logout" onclick="window.location.href='index.html'">Voltar</button>
+        <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
 </header>
 
-<main class="lesson-container">
-  <div class="progress-wrapper"><div id="progressBar" class="progress-bar"></div></div>
-  <h2 id="lessonTitle">Aula</h2>
-  <div id="exerciseContainer" class="exercise">Carregando...</div>
-  <div style="display:flex;gap:12px;margin-top:12px">
-    <button id="verifyBtn" class="btn">Verificar</button>
-    <button id="nextBtn" class="btn ghost">Pular</button>
-  </div>
-</main>
+
+<div class="lesson-container">
+
+    <img src="logo.png" class="mascot-lesson">
+
+    <h1 class="lesson-title" id="lessonTitle">Carregando...</h1>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div id="lessonBlock" class="lesson-block">
+        Carregando exercício...
+    </div>
+
+</div>
+
 
 <script>
-// lesson engine (lightweight) — parse id from URL, load 5 exercises template, progress, save completion
+/* =======================================================
+   CARREGAR A AULA
+======================================================= */
 
-function getSession(){ try{ return JSON.parse(localStorage.getItem('englishplay_session')); } catch(e){ return null } }
-function setSession(s){ localStorage.setItem('englishplay_session', JSON.stringify(s)); }
-function dbLoad(){ try{ return JSON.parse(localStorage.getItem('englishplay_db')) || { users:[] }; } catch { return { users:[] }; } }
-function dbSave(db){ localStorage.setItem('englishplay_db', JSON.stringify(db)); }
+let currentUser = JSON.parse(localStorage.getItem("currentUser"));
+let allUsers = JSON.parse(localStorage.getItem("users")) || {};
 
-const params = new URLSearchParams(location.search);
-const lessonId = Number(params.get('id')) || 1;
-const titleEl = document.getElementById('lessonTitle');
-const container = document.getElementById('exerciseContainer');
-const progressBar = document.getElementById('progressBar');
-const verifyBtn = document.getElementById('verifyBtn');
-const nextBtn = document.getElementById('nextBtn');
+const params = new URLSearchParams(window.location.search);
+const lessonId = Number(params.get("id"));
 
-titleEl.textContent = `Aula ${lessonId}`;
+if (!currentUser) window.location.href = "auth.html";
 
-let exercises = [
-  { type:'multiple_choice', question:'How are you?', options:['Como vai você?','Onde mora?','Qual seu nome?'], answer:'Como vai você?' },
-  { type:'fill_blank', sentence:'I ___ a student.', answer:'am' },
-  { type:'drag_drop', sentence:'I like learning English', words:['I','like','learning','English'], answer:['I','like','learning','English'] },
-  { type:'listen_choice', text:'Good morning', options:['Boa noite','Bom dia','Até logo'], answer:'Bom dia' },
-  { type:'translate', original:'I have a dog', answer:'eu tenho um cachorro' }
-];
+document.getElementById("lessonTitle").innerText = `Lição ${lessonId}`;
 
-let idx=0;
-let userAnswer=null;
+/* PROGRESSO DA AULA (5 exercícios) */
+let index = 0;
+const total = 5;
 
-function updateProgress(){ progressBar.style.width = (idx/exercises.length*100)+'%'; }
-
-function render(){
-  userAnswer=null; verifyBtn.disabled=true;
-  const ex = exercises[idx];
-  updateProgress();
-  if(!ex) return finish();
-  if(ex.type==='multiple_choice'){
-    container.innerHTML = `<h3>${ex.question}</h3><div class="options-grid">${ex.options.map(o=>`<button class="opt-btn">${o}</button>`).join('')}</div>`;
-    document.querySelectorAll('.opt-btn').forEach(b=>{
-      b.onclick=()=>{ document.querySelectorAll('.opt-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); userAnswer=b.textContent; verifyBtn.disabled=false; }
-    });
-  } else if(ex.type==='fill_blank'){
-    container.innerHTML = `<h3>Complete: ${ex.sentence.replace('___','<input id="fillInput" class="fill-input">')}</h3>`;
-    const fi = document.getElementById('fillInput'); fi.oninput=()=>{ userAnswer=fi.value.trim().toLowerCase(); verifyBtn.disabled = !userAnswer; }
-  } else if(ex.type==='drag_drop'){
-    const bank = ex.words.sort(()=>Math.random()-0.5).map(w=>`<div class="drag-word">${w}</div>`).join('');
-    container.innerHTML = `<h3>Monte a frase:</h3><div id="slotArea" style="min-height:40px;border:1px dashed #222;padding:8px;border-radius:8px"></div><div style="margin-top:12px" id="bank">${bank}</div>`;
-    document.querySelectorAll('.drag-word').forEach(w=>{
-      w.onclick=()=>{
-        const slot = document.getElementById('slotArea');
-        const el = document.createElement('span'); el.textContent = w.textContent; el.style.marginRight='8px';
-        slot.appendChild(el); w.remove();
-        userAnswer = Array.from(slot.childNodes).map(n=>n.textContent).join(' ');
-        verifyBtn.disabled = !userAnswer;
-      }
-    });
-  } else if(ex.type==='listen_choice'){
-    container.innerHTML = `<h3>Ouça:</h3><button id="playBtn" class="btn">▶ Ouvir</button><div class="options-grid" id="optGrid">${ex.options.map(o=>`<button class="opt-btn">${o}</button>`).join('')}</div>`;
-    document.getElementById('playBtn').onclick=()=>{ const msg=new SpeechSynthesisUtterance(ex.text); msg.lang='en-US'; speechSynthesis.speak(msg); }
-    document.querySelectorAll('.opt-btn').forEach(b=>{ b.onclick=()=>{ document.querySelectorAll('.opt-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); userAnswer=b.textContent; verifyBtn.disabled=false; }});
-  } else if(ex.type==='translate'){
-    container.innerHTML = `<h3>Traduza:</h3><p>${ex.original}</p><textarea id="translate" rows="2"></textarea>`;
-    document.getElementById('translate').oninput = (e)=>{ userAnswer = e.target.value.trim().toLowerCase(); verifyBtn.disabled = !userAnswer; }
-  }
+function updateProgress() {
+    document.getElementById("progressFill").style.width = `${(index / total) * 100}%`;
 }
 
-verifyBtn.onclick = () => {
-  const ex = exercises[idx];
-  let correct=false;
-  if(ex.type==='multiple_choice' || ex.type==='listen_choice') correct = userAnswer === ex.answer;
-  if(ex.type==='fill_blank') correct = userAnswer === ex.answer.toLowerCase();
-  if(ex.type==='drag_drop') correct = userAnswer === ex.answer.join(' ');
-  if(ex.type==='translate') correct = userAnswer === ex.answer.toLowerCase();
-  if(correct){ container.classList.add('correctFlash'); setTimeout(()=>{container.classList.remove('correctFlash'); idx++; if(idx>=exercises.length) finish(); else render();},900); } 
-  else { container.classList.add('wrongFlash'); setTimeout(()=>container.classList.remove('wrongFlash'),900); }
+/* =======================================================
+   RENDERIZAR EXERCÍCIOS
+======================================================= */
+
+function renderExercise() {
+    updateProgress();
+
+    if (index >= total) return finishLesson();
+
+    const block = document.getElementById("lessonBlock");
+    const exercise = LESSON_BANK[index]; // vem de lessons.js
+
+    if (exercise.type === "choice") {
+        block.innerHTML = `
+            <h2>${exercise.question}</h2>
+            ${exercise.options.map(o =>
+                `<button class="option-btn" onclick="checkChoice('${o}', '${exercise.answer}')">${o}</button>`
+            ).join("")}
+        `;
+    }
+
+    if (exercise.type === "write") {
+        block.innerHTML = `
+            <h2>${exercise.question}</h2>
+            <input id="writeInput" class="input-write" placeholder="Digite sua resposta...">
+            <button class="btn-main" onclick="checkWrite('${exercise.answer}')">Verificar</button>
+        `;
+    }
+
+    if (exercise.type === "drag") {
+        block.innerHTML = `
+            <h2>${exercise.question}</h2>
+            <div id="dragArea"></div>
+            <div id="dropZone"></div>
+            <button class="btn-main" onclick="checkDrag('${exercise.answer}')">Verificar</button>
+        `;
+
+        exercise.words.forEach(w => {
+            const bubble = document.createElement("span");
+            bubble.className = "word";
+            bubble.innerText = w;
+            bubble.draggable = true;
+
+            bubble.ondragstart = e => e.dataTransfer.setData("text", w);
+            document.getElementById("dragArea").appendChild(bubble);
+        });
+
+        const dz = document.getElementById("dropZone");
+        dz.ondragover = e => e.preventDefault();
+        dz.ondrop = e => {
+            e.preventDefault();
+            const w = e.dataTransfer.getData("text");
+            dz.innerHTML += `<span class="word">${w}</span>`;
+        };
+    }
 }
 
-nextBtn.onclick = ()=>{ idx++; if(idx>=exercises.length) finish(); else render(); }
+/* =======================================================
+   VERIFICAÇÕES
+======================================================= */
 
-function finish(){
-  const s = sessionLoad();
-  if(s){ s.completed = s.completed || []; if(!s.completed.includes(lessonId)) s.completed.push(lessonId); sessionSave(s); const DB = dbLoad(); const i = DB.users.findIndex(u=>u.id===s.id); if(i>=0){ DB.users[i]=s; dbSave(DB); } }
-  container.innerHTML = `<h2>Parabéns! Aula concluída 🎉</h2><button class="btn" onclick="location.href='index.html'">Voltar</button>`;
-  progressBar.style.width = '100%';
+function checkChoice(sel, correct) {
+    feedback(sel === correct, correct);
 }
 
-/* start */
-render();
+function checkWrite(correct) {
+    let v = document.getElementById("writeInput").value.trim().toLowerCase();
+    feedback(v === correct.toLowerCase(), correct);
+}
+
+function checkDrag(correct) {
+    const words = [...document.querySelectorAll("#dropZone .word")].map(w => w.innerText);
+    const phrase = words.join(" ").trim();
+
+    feedback(phrase === correct, correct);
+}
+
+/* =======================================================
+   FEEDBACK FINAL
+======================================================= */
+
+function feedback(isCorrect, correctAnswer) {
+    const block = document.getElementById("lessonBlock");
+
+    if (isCorrect) {
+        mascoteFala("Muito bem! Continue assim!");
+        block.classList.add("correct-flash");
+
+        // XP
+        currentUser.xp += 10;
+        allUsers[currentUser.name] = currentUser;
+
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        localStorage.setItem("users", JSON.stringify(allUsers));
+
+        setTimeout(() => {
+            block.classList.remove("correct-flash");
+            index++;
+            renderExercise();
+        }, 700);
+
+    } else {
+        mascoteFala("Ops! Vamos melhorar!");
+        block.classList.add("error-flash");
+
+        block.innerHTML += `
+            <p style="color:#ff5757; margin-top:10px;">
+                Correção: <b>${correctAnswer}</b>
+            </p>
+        `;
+
+        setTimeout(() => {
+            block.classList.remove("error-flash");
+        }, 700);
+    }
+}
+
+/* =======================================================
+   FINALIZAR AULA
+======================================================= */
+
+function finishLesson() {
+    const block = document.getElementById("lessonBlock");
+
+    block.innerHTML = `
+        <div class="finish-box">
+            <h2>🎉 Parabéns!</h2>
+            <p>Você finalizou a aula e ganhou +10 XP!</p>
+            <button class="btn-main" onclick="window.location.href='index.html'">Voltar ao Início</button>
+        </div>
+    `;
+
+    // Desbloquear próxima lição
+    currentUser.lessonsUnlocked = Math.max(currentUser.lessonsUnlocked, lessonId + 1);
+    allUsers[currentUser.name] = currentUser;
+
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    localStorage.setItem("users", JSON.stringify(allUsers));
+}
+
+/* iniciar */
+renderExercise();
 </script>
 
 </body>
