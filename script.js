@@ -1,511 +1,586 @@
-/* EnglishPlay — Front-end localStorage
-   - Modais 100% corrigidos (nunca sobrepõem)
-   - Layout alinhado
-   - Pesquisa de amigos
-   - Aulas com redirecionamento
-   - Questionário com opções
-   - Avatar personalizável
-   - Desbloqueio de aulas com modal
-*/
+/* ============================================================
+   ENGLISHPLAY — SISTEMA DE AULAS ESTILO DUOLINGO
+   PARTE 1/3 — ENGINE, CARREGAMENTO DA AULA, ESTRUTURA BASE
+   ============================================================ */
 
-(() => {
+(function () {
 
-  const DB_KEY = "englishplay_db_v3";
-  const SESS_KEY = "englishplay_session_v3";
+    /* =======================
+       UTILITÁRIOS
+    ======================= */
 
-  // DOM
-  const userArea = document.getElementById("userArea");
-  const sidebar = document.getElementById("sidebar");
-  const lessonsGrid = document.getElementById("lessonsGrid");
-
-  const searchInput = document.getElementById("searchUsers");
-  const searchResults = document.getElementById("searchResults");
-
-  const overlay = document.getElementById("overlay");
-  const authModal = document.getElementById("authModal");
-  const questionModal = document.getElementById("questionModal");
-  const paymentModal = document.getElementById("paymentModal");
-
-  const authLoginBtn = document.getElementById("authLoginBtn");
-  const authRegisterBtn = document.getElementById("authRegisterBtn");
-
-  const finishQuestionBtn = document.getElementById("finishQuestion");
-
-  let unlockTarget = null;
-
-  // ------------ DATABASE ------------
-
-  function defaultDB() {
-    const lessons = {};
-    for (let i = 1; i <= 200; i++) {
-      lessons[i] = {
-        id: i,
-        title: "Aula " + i,
-        content: "Conteúdo de exemplo da aula " + i
-      };
-    }
-    return {
-      users: [],
-      lessons
-    };
-  }
-
-  function dbLoad() {
-    try {
-      return JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB();
-    } catch (e) {
-      return defaultDB();
-    }
-  }
-
-  function dbSave(db) {
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-  }
-
-  function getSession() {
-    try {
-      return JSON.parse(localStorage.getItem(SESS_KEY));
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function setSession(u) {
-    localStorage.setItem(SESS_KEY, JSON.stringify(u));
-  }
-
-  function clearSession() {
-    localStorage.removeItem(SESS_KEY);
-  }
-
-  let db = dbLoad();
-  let session = getSession();
-
-  // ---------------- MODAL SYSTEM (CORRIGIDO) ----------------
-
-  function closeAllModals() {
-    authModal.classList.add("hidden");
-    questionModal.classList.add("hidden");
-    paymentModal.classList.add("hidden");
-    overlay.classList.add("hidden");
-  }
-
-  function openModal(modal) {
-    closeAllModals();
-    modal.classList.remove("hidden");
-    overlay.classList.remove("hidden");
-  }
-
-  function openAuthModal() {
-    openModal(authModal);
-  }
-
-  function openQuestionnaire() {
-    openModal(questionModal);
-  }
-
-  function openPaymentModal() {
-    openModal(paymentModal);
-  }
-
-  // ---------------- HEADER ----------------
-
-  function renderHeader() {
-    if (!session) {
-      userArea.innerHTML = `
-        <button class="nav-btn" id="topLoginBtn">Entrar</button>
-      `;
-      document.getElementById("topLoginBtn").onclick = openAuthModal;
-      return;
+    function escapeHTML(str) {
+        return String(str).replace(/[&<>"']/g, c => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;"
+        }[c]));
     }
 
-    userArea.innerHTML = `
-      <span style="margin-right:8px">Olá, <b>${escape(session.username)}</b></span>
-      <button class="nav-btn" id="profileBtn">Perfil</button>
-      <button class="nav-btn" id="logoutBtn">Sair</button>
-    `;
-
-    document.getElementById("logoutBtn").onclick = () => {
-      clearSession();
-      session = null;
-      renderAll();
-    };
-  }
-
-  // ---------------- FRIEND SEARCH ----------------
-
-  searchInput.addEventListener("input", e => {
-    const q = e.target.value.trim().toLowerCase();
-    if (!q) {
-      searchResults.classList.add("hidden");
-      searchResults.innerHTML = "";
-      return;
-    }
-
-    const matches = db.users.filter(u =>
-      u.username.toLowerCase().includes(q)
-    );
-
-    searchResults.innerHTML = matches
-      .map(
-        u => `
-      <div class="search-item">
-        <div>
-          <b>${escape(u.username)}</b>
-        </div>
-        <div>
-          ${renderFriendButton(u)}
-        </div>
-      </div>
-    `
-      )
-      .join("");
-
-    searchResults.classList.remove("hidden");
-  });
-
-  function renderFriendButton(user) {
-    if (!session) return `<button class="btn ghost" onclick="openAuthModal()">Entrar</button>`;
-    if (session.id === user.id) return `<span style="color:#888">Você</span>`;
-
-    const isFriend = session.friends?.includes(user.id);
-
-    if (isFriend) {
-      return `<button class="btn ghost">Amigo</button>`;
-    }
-
-    return `<button class="btn" onclick="sendFriendRequest(${user.id})">Adicionar</button>`;
-  }
-
-  window.sendFriendRequest = function (id) {
-    if (!session) return openAuthModal();
-
-    const user = db.users.find(u => u.id === id);
-    if (!user) return;
-
-    session.friends = session.friends || [];
-    user.friends = user.friends || [];
-
-    if (!session.friends.includes(id)) session.friends.push(id);
-    if (!user.friends.includes(session.id)) user.friends.push(session.id);
-
-    dbSave(db);
-    setSession(session);
-    renderAll();
-  };
-
-  // ---------------- REGISTER / LOGIN ----------------
-
-  authLoginBtn.addEventListener("click", () => {
-    const u = document.getElementById("authUser").value.trim();
-    const p = document.getElementById("authPass").value.trim();
-
-    if (!u || !p) return alert("Preencha tudo.");
-
-    const user = db.users.find(x => x.username === u && x.password === p);
-    if (!user) return alert("Usuário ou senha incorretos.");
-
-    session = user;
-    setSession(user);
-    closeAllModals();
-    renderAll();
-  });
-
-  authRegisterBtn.addEventListener("click", () => {
-    const u = document.getElementById("authUser").value.trim();
-    const p = document.getElementById("authPass").value.trim();
-
-    if (!u || !p) return alert("Preencha tudo.");
-    if (db.users.some(x => x.username === u)) return alert("Nome já existe.");
-
-    const newUser = {
-      id: Date.now(),
-      username: u,
-      password: p,
-      avatar: null,
-      unlocked: 5,
-      completed: [],
-      friends: []
-    };
-
-    db.users.push(newUser);
-    dbSave(db);
-
-    session = newUser;
-    setSession(newUser);
-
-    openQuestionnaire();
-  });
-
-  // ---------------- QUESTIONÁRIO ----------------
-
-  finishQuestionBtn.addEventListener("click", () => {
-    session.questionnaire = {
-      source: document.getElementById("q_source").value,
-      days: document.getElementById("q_days").value,
-      reason: document.getElementById("q_reason").value,
-      level: document.querySelector("input[name='q_level']:checked").value
-    };
-
-    dbSave(db);
-    closeAllModals();
-    renderAll();
-  });
-
-  // ---------------- LESSON GRID ----------------
-
-  function renderLessons(filter = "all") {
-    lessonsGrid.innerHTML = "";
-
-    for (let i = 1; i <= 200; i++) {
-      const lesson = db.lessons[i];
-      const unlocked = session ? session.unlocked >= i : i <= 5;
-      const done = session?.completed?.includes(i);
-
-      if (filter === "locked" && unlocked) continue;
-      if (filter === "done" && !done) continue;
-
-      const div = document.createElement("div");
-      div.className = "lesson-card" + (!unlocked ? " locked" : "") + (done ? " done" : "");
-
-      div.innerHTML = `
-        <div class="lesson-num">${unlocked ? i : "🔒"}</div>
-        <div>${escape(lesson.title)}</div>
-      `;
-
-      div.onclick = () => {
-        if (!unlocked) {
-          unlockTarget = i;
-          openPaymentModal();
-          return;
+    // carregar DB
+    function dbLoad() {
+        try {
+            return JSON.parse(localStorage.getItem("englishplay_db_v3")) || {};
+        } catch (e) {
+            return {};
         }
-        location.href = "lesson.html?id=" + i;
-      };
-
-      lessonsGrid.appendChild(div);
-    }
-  }
-
-  document.getElementById("viewFilter").addEventListener("change", e => {
-    renderLessons(e.target.value);
-  });
-
-  // ---------------- PAGAMENTO SIMULADO ----------------
-
-  document.getElementById("simulatePayBtn").onclick = () => {
-    if (!session) return alert("Faça login antes.");
-
-    session.unlocked = Math.max(session.unlocked, unlockTarget);
-    dbSave(db);
-    setSession(session);
-
-    unlockTarget = null;
-    closeAllModals();
-    renderAll();
-  };
-
-  document.getElementById("closePayBtn").onclick = () => {
-    unlockTarget = null;
-    closeAllModals();
-  };
-
-  // ---------------- SIDEBAR ----------------
-
-  function renderSidebar() {
-    if (!session) {
-      sidebar.innerHTML = `
-        <div class="card">
-          <h3>Bem-vindo!</h3>
-          <p>Crie uma conta para salvar seu progresso.</p>
-        </div>
-      `;
-      return;
     }
 
-    sidebar.innerHTML = `
-      <div class="card">
-        <img src="${session.avatar || "logo.png"}" class="profile-avatar" />
-        <h3>${escape(session.username)}</h3>
-        <p>Aulas liberadas: ${session.unlocked}</p>
-        <p>Concluídas: ${session.completed.length}</p>
-        <button class="btn" id="changeAvatarBtn">Trocar foto</button>
-      </div>
-    `;
+    // carregar sessão
+    function getSession() {
+        try {
+            return JSON.parse(localStorage.getItem("englishplay_session_v3"));
+        } catch (e) {
+            return null;
+        }
+    }
 
-    document.getElementById("changeAvatarBtn").onclick = changeAvatar;
-  }
+    // atualizar sessão
+    function setSession(s) {
+        localStorage.setItem("englishplay_session_v3", JSON.stringify(s));
+    }
 
-  function changeAvatar() {
-    const inp = document.createElement("input");
-    inp.type = "file";
-    inp.accept = "image/*";
-    inp.onchange = e => {
-      const f = e.target.files[0];
-      if (!f) return;
+    // salvar DB
+    function dbSave(db) {
+        localStorage.setItem("englishplay_db_v3", JSON.stringify(db));
+    }
 
-      const r = new FileReader();
-      r.onload = () => {
-        session.avatar = r.result;
-        dbSave(db);
-        setSession(session);
-        renderAll();
-      };
-      r.readAsDataURL(f);
-    };
-    inp.click();
-  }
-
-  // ---------------- HELPERS ----------------
-
-  function escape(s) {
-    return String(s).replace(/[&<>"]/g, c => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;"
-    }[c]));
-  }
-
-  // ---------------- RENDER ALL ----------------
-
-  function renderAll() {
-    db = dbLoad();
-    session = getSession();
-    renderHeader();
-    renderSidebar();
-    renderLessons();
-  }
-
-  // ---------------- INIT ----------------
-
-  document.getElementById("btnCreate").onclick = openAuthModal;
-  document.getElementById("btnLogin").onclick = openAuthModal;
-
-  renderAll();
-
-})();
-// ==================================================
-// ===============  LESSON PAGE HANDLER  ============
-// ==================================================
-
-if (location.pathname.includes("lesson.html")) {
-  document.addEventListener("DOMContentLoaded", () => {
-    const params = new URLSearchParams(location.search);
-    const id = Number(params.get("id"));
-
-    const titleEl = document.getElementById("lessonTitle");
-    const contentEl = document.getElementById("lessonContent");
-    const finishBtn = document.getElementById("finishLesson");
+    /* =======================
+       VARIÁVEIS DA AULA
+    ======================= */
 
     let db = dbLoad();
     let session = getSession();
 
-    if (!id || !db.lessons[id]) {
-      titleEl.textContent = "Aula não encontrada";
-      return;
+    let exerciseContainer;
+    let verifyBtn;
+    let progressBar;
+
+    let lessonId = null;
+    let currentExerciseIndex = 0;
+    let exercises = [];
+
+    /* =======================
+       DEFINIÇÃO DOS TIPOS DE EXERCÍCIO
+    ======================= */
+
+    const LESSON_TEMPLATES = {
+
+        // ✔ múltipla escolha
+        multiple_choice: (question, options, answer) => ({
+            type: "multiple_choice",
+            question,
+            options,
+            answer
+        }),
+
+        // ✔ completar frase
+        fill_blank: (sentence, answer) => ({
+            type: "fill_blank",
+            sentence,
+            answer
+        }),
+
+        // ✔ arrastar e soltar (montar frase)
+        drag_drop: (sentence, words) => ({
+            type: "drag_drop",
+            sentence,
+            words,
+            answer: sentence.split(" ")
+        }),
+
+        // ✔ tradução
+        translate: (original, answer) => ({
+            type: "translate",
+            original,
+            answer
+        }),
+
+        // ✔ ouvir e selecionar
+        listen_choice: (text, options, answer) => ({
+            type: "listen_choice",
+            text,
+            options,
+            answer
+        })
+    };
+
+    /* =======================
+       GERAR EXERCÍCIOS PARA A AULA
+    ======================= */
+
+    function generateExercisesForLesson(lessonId) {
+
+        // você pode mudar o conteúdo aqui depois
+        return [
+            LESSON_TEMPLATES.multiple_choice(
+                "How are you?",
+                ["Como vai você?", "Onde você mora?", "Qual é seu nome?", "Você está estudando?"],
+                "Como vai você?"
+            ),
+
+            LESSON_TEMPLATES.fill_blank(
+                "I ___ a student.",
+                "am"
+            ),
+
+            LESSON_TEMPLATES.drag_drop(
+                "I like learning English",
+                ["English", "like", "learning", "I"]
+            ),
+
+            LESSON_TEMPLATES.listen_choice(
+                "Good morning",
+                ["Boa noite", "Bom dia", "Até logo"],
+                "Bom dia"
+            ),
+
+            LESSON_TEMPLATES.translate(
+                "I have a dog",
+                "eu tenho um cachorro"
+            )
+        ];
     }
 
-    titleEl.textContent = db.lessons[id].title;
-    contentEl.textContent = db.lessons[id].content;
+    /* =======================
+       CARREGAR A AULA
+    ======================= */
 
-    // concluir aula
-    finishBtn.onclick = () => {
-      if (!session) {
-        alert("Você precisa fazer login!");
-        return;
-      }
+    function loadLesson() {
 
-      session.completed = session.completed || [];
-      if (!session.completed.includes(id)) {
-        session.completed.push(id);
-      }
+        if (!location.pathname.includes("lesson.html")) return;
 
-      dbSave(db);
-      setSession(session);
+        const params = new URLSearchParams(location.search);
+        lessonId = Number(params.get("id"));
 
-      // animação de confete ao finalizar
-      fireConfetti();
+        exerciseContainer = document.getElementById("exerciseContainer");
+        verifyBtn = document.getElementById("verifyBtn");
+        progressBar = document.getElementById("progressBar");
 
-      setTimeout(() => {
-        location.href = "index.html";
-      }, 1500);
+        // gerar exercícios
+        exercises = generateExercisesForLesson(lessonId);
+        currentExerciseIndex = 0;
+
+        renderExercise();
+        updateProgress();
+    }
+
+    /* =======================
+       ATUALIZAR BARRA DE PROGRESSO
+    ======================= */
+
+    function updateProgress() {
+        const percent = ((currentExerciseIndex) / exercises.length) * 100;
+        progressBar.style.width = percent + "%";
+    }
+
+    /* =======================
+       RENDERIZAR EXERCÍCIO ATUAL
+    ======================= */
+
+    function renderExercise() {
+
+        verifyBtn.disabled = true;
+        const ex = exercises[currentExerciseIndex];
+
+        switch (ex.type) {
+
+            case "multiple_choice":
+                renderMultipleChoice(ex);
+                break;
+
+            case "fill_blank":
+                renderFillBlank(ex);
+                break;
+
+            case "drag_drop":
+                renderDragDrop(ex);
+                break;
+
+            case "translate":
+                renderTranslate(ex);
+                break;
+
+            case "listen_choice":
+                renderListenChoice(ex);
+                break;
+
+            default:
+                exerciseContainer.innerHTML = "Exercício inválido.";
+        }
+    }
+
+    /* ============================================================
+       A PARTIR DAQUI (PARTE 2), ENVIAREI OS RENDERIZADORES:
+       - múltipla escolha
+       - completar frase
+       - drag & drop
+       - tradução
+       - ouvir e responder
+       - sistema de verificação
+       ============================================================ */
+
+    window._lessonEngine = {
+        loadLesson,
+        renderExercise,
+        updateProgress
     };
-  });
+
+    // iniciar automaticamente
+    loadLesson();
+
+})();
+/* ============================================================
+   PARTE 2/3 — RENDERIZAÇÃO DOS EXERCÍCIOS
+   ============================================================ */
+
+let userAnswer = null;
+let dragDropSlots = [];
+let dragDropBank = [];
+
+/* ============================
+   1) MÚLTIPLA ESCOLHA
+============================ */
+
+function renderMultipleChoice(ex) {
+    exerciseContainer.innerHTML = `
+        <h2>${escapeHTML(ex.question)}</h2>
+        <div class="options-grid" id="optionsGrid"></div>
+    `;
+
+    const grid = document.getElementById("optionsGrid");
+
+    ex.options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.className = "opt-btn";
+        btn.textContent = option;
+
+        btn.onclick = () => {
+            document.querySelectorAll(".opt-btn").forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            userAnswer = option;
+            verifyBtn.disabled = false;
+        };
+
+        grid.appendChild(btn);
+    });
 }
 
-// ==================================================
-// ===============  CONFETTI EFFECT  =================
-// ==================================================
+/* ============================
+   2) COMPLETAR FRASE
+============================ */
+
+function renderFillBlank(ex) {
+    exerciseContainer.innerHTML = `
+        <h2>Complete:</h2>
+        <div class="fill-container">
+            <span>${ex.sentence.replace("___", `<input id="fillInput" class='fill-input'>`)}</span>
+        </div>
+    `;
+
+    const input = document.getElementById("fillInput");
+
+    input.oninput = () => {
+        userAnswer = input.value.trim().toLowerCase();
+        verifyBtn.disabled = userAnswer === "";
+    };
+}
+
+/* ============================
+   3) DRAG & DROP — ARRANJAR PALAVRAS
+============================ */
+
+function renderDragDrop(ex) {
+    exerciseContainer.innerHTML = `
+        <h2>Monte a frase:</h2>
+
+        <div class="drag-target" id="dragTarget"></div>
+        <div class="drag-bank" id="dragBank"></div>
+    `;
+
+    dragDropSlots = [];
+    dragDropBank = [];
+
+    const target = document.getElementById("dragTarget");
+    const bank = document.getElementById("dragBank");
+
+    // embaralhar palavras
+    const shuffled = [...ex.words].sort(() => Math.random() - 0.5);
+
+    // slots alvo
+    ex.answer.forEach(() => {
+        const slot = document.createElement("div");
+        slot.className = "slot";
+        slot.dataset.filled = "false";
+        target.appendChild(slot);
+        dragDropSlots.push(slot);
+    });
+
+    // palavras clicáveis
+    shuffled.forEach(word => {
+        const w = document.createElement("div");
+        w.className = "drag-word";
+        w.textContent = word;
+
+        w.onclick = () => {
+            const emptySlot = dragDropSlots.find(s => s.dataset.filled === "false");
+            if (!emptySlot) return;
+
+            emptySlot.textContent = word;
+            emptySlot.dataset.filled = "true";
+            w.remove();
+
+            checkDragStatus(ex);
+        };
+
+        bank.appendChild(w);
+        dragDropBank.push(w);
+    });
+}
+
+function checkDragStatus(ex) {
+    const arr = dragDropSlots.map(s => s.textContent);
+    if (arr.every(Boolean)) {
+        userAnswer = arr.join(" ");
+        verifyBtn.disabled = false;
+    }
+}
+
+/* ============================
+   4) TRADUÇÃO
+============================ */
+
+function renderTranslate(ex) {
+    exerciseContainer.innerHTML = `
+        <h2>Traduza:</h2>
+        <p class="translate-original">${escapeHTML(ex.original)}</p>
+        <textarea id="translateInput" class="translate-box" placeholder="Digite sua resposta..."></textarea>
+    `;
+
+    const input = document.getElementById("translateInput");
+
+    input.oninput = () => {
+        userAnswer = input.value.trim().toLowerCase();
+        verifyBtn.disabled = userAnswer.length === 0;
+    };
+}
+
+/* ============================
+   5) OUVIR E RESPONDER
+============================ */
+
+function renderListenChoice(ex) {
+    exerciseContainer.innerHTML = `
+        <h2>Ouça e escolha a tradução correta:</h2>
+
+        <button class="listen-btn" id="listenBtn">▶ Ouvir</button>
+
+        <div class="options-grid" id="listenOptions"></div>
+    `;
+
+    const listenBtn = document.getElementById("listenBtn");
+
+    listenBtn.onclick = () => speakText(ex.text);
+
+    const grid = document.getElementById("listenOptions");
+
+    ex.options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.className = "opt-btn";
+        btn.textContent = option;
+
+        btn.onclick = () => {
+            document.querySelectorAll(".opt-btn").forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            userAnswer = option;
+            verifyBtn.disabled = false;
+        };
+
+        grid.appendChild(btn);
+    });
+}
+
+/* ============================
+   SISTEMA DE FALA (TTS)
+============================ */
+
+function speakText(text) {
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = "en-US";
+    window.speechSynthesis.speak(msg);
+}
+
+/* ============================================================
+   NA PARTE 3/3:
+   ✔ Sistema de verificação (correto/errado)
+   ✔ Sons ✔ e ✘
+   ✔ Próximo exercício
+   ✔ Finalização da aula (confete + registrar progresso)
+   ============================================================ */
+/* ============================================================
+   PARTE 3/3 — VERIFICAÇÃO, AVANÇO E FINALIZAÇÃO
+   ============================================================ */
+
+/* ============================
+   SOM DE ACERTO E ERRO
+============================ */
+
+const correctSound = new Audio(
+    "https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"
+);
+const wrongSound = new Audio(
+    "https://assets.mixkit.co/active_storage/sfx/1384/1384-preview.mp3"
+);
+
+/* ============================
+   VERIFICAR RESPOSTA
+============================ */
+
+verifyBtn.onclick = () => verifyAnswer();
+
+function verifyAnswer() {
+
+    const exercise = exercises[currentExerciseIndex];
+    let correct = false;
+
+    switch (exercise.type) {
+
+        case "multiple_choice":
+        case "listen_choice":
+            correct = (userAnswer === exercise.answer);
+            break;
+
+        case "fill_blank":
+            correct = (userAnswer === exercise.answer.toLowerCase());
+            break;
+
+        case "drag_drop":
+            correct = (userAnswer === exercise.answer.join(" "));
+            break;
+
+        case "translate":
+            correct = (userAnswer === exercise.answer.toLowerCase());
+            break;
+    }
+
+    if (correct) {
+        showCorrectFeedback();
+    } else {
+        showWrongFeedback();
+    }
+}
+
+/* ============================
+   FEEDBACK DE ACERTO
+============================ */
+
+function showCorrectFeedback() {
+
+    correctSound.currentTime = 0;
+    correctSound.play();
+
+    exerciseContainer.classList.add("correctFlash");
+
+    setTimeout(() => {
+        exerciseContainer.classList.remove("correctFlash");
+        nextExercise();
+    }, 900);
+}
+
+/* ============================
+   FEEDBACK DE ERRO
+============================ */
+
+function showWrongFeedback() {
+
+    wrongSound.currentTime = 0;
+    wrongSound.play();
+
+    exerciseContainer.classList.add("wrongFlash");
+
+    setTimeout(() => {
+        exerciseContainer.classList.remove("wrongFlash");
+    }, 900);
+}
+
+/* ============================
+   IR PARA O PRÓXIMO EXERCÍCIO
+============================ */
+
+function nextExercise() {
+
+    currentExerciseIndex++;
+
+    if (currentExerciseIndex >= exercises.length) {
+        finishLesson();
+    } else {
+        userAnswer = null;
+        verifyBtn.disabled = true;
+        renderExercise();
+        updateProgress();
+    }
+}
+
+/* ============================
+   FINALIZAR AULA
+============================ */
+
+function finishLesson() {
+
+    // registrar no progresso do usuário
+    if (session) {
+        session.completed = session.completed || [];
+
+        if (!session.completed.includes(lessonId)) {
+            session.completed.push(lessonId);
+        }
+
+        setSession(session);
+
+        let db = dbLoad();
+        let idx = db.users.findIndex(u => u.id === session.id);
+        if (idx >= 0) db.users[idx] = session;
+        dbSave(db);
+    }
+
+    // confete
+    fireConfetti();
+
+    exerciseContainer.innerHTML = `
+        <h2 class="lesson-finished-title">Parabéns! 🎉</h2>
+        <p class="lesson-finished-text">Você concluiu esta aula.</p>
+        <button class="btn big-btn" onclick="location.href='index.html'">
+            Voltar ao início
+        </button>
+    `;
+
+    verifyBtn.style.display = "none";
+}
+
+/* ============================
+   CONFETTI
+============================ */
 
 function fireConfetti() {
-  const body = document.body;
-  const conf = document.createElement("div");
-  conf.className = "confetti-container";
+    const conf = document.createElement("div");
+    conf.className = "confetti";
 
-  for (let i = 0; i < 35; i++) {
-    const piece = document.createElement("div");
-    piece.className = "confetti-piece";
-    piece.style.left = Math.random() * 100 + "%";
-    piece.style.animationDelay = Math.random() * 0.5 + "s";
-    conf.appendChild(piece);
-  }
+    for (let i = 0; i < 40; i++) {
+        const p = document.createElement("div");
+        p.className = "confetti-piece";
+        p.style.left = Math.random() * 100 + "%";
+        p.style.background = ["#f5c518", "#00ff80", "#fff"][Math.floor(Math.random() * 3)];
+        conf.appendChild(p);
+    }
 
-  body.appendChild(conf);
+    document.body.appendChild(conf);
 
-  setTimeout(() => {
-    conf.remove();
-  }, 2000);
+    setTimeout(() => conf.remove(), 2000);
 }
 
-// ==================================================
-// ===============  FIRE ANIMATION  ==================
-// ==================================================
+/* ============================
+   FIM DA PARTE 3/3
+============================ */
 
-function renderFire() {
-  const f = document.getElementById("fireIcon");
-
-  if (!
-// ==================================================
-// ===============  UI / ANIMAÇÕES  =================
-// ==================================================
-
-// animação suave nos botões
-document.addEventListener("mouseover", e => {
-  if (e.target.classList.contains("btn")) {
-    e.target.style.transform = "scale(1.06)";
-  }
-});
-document.addEventListener("mouseout", e => {
-  if (e.target.classList.contains("btn")) {
-    e.target.style.transform = "scale(1)";
-  }
-});
-
-// expandir / recolher sidebar (mobile)
-const menuToggle = document.getElementById("toggleMenu");
-if (menuToggle) {
-  menuToggle.onclick = () => {
-    sidebar.classList.toggle("open");
-  };
-}
-
-// ==================================================
-// ===============  CLOSE MODALS =====================
-// ==================================================
-
-overlay.onclick = () => {
-  closeAllModals();
-};
-
-document.querySelectorAll(".closeModal").forEach(btn => {
-  btn.onclick = closeAllModals;
-});
-
-// ==================================================
-// ===============  FINAL INIT CHECK =================
-// ==================================================
-
-renderFire(); // animação inicial
-
-console.log("%cEnglishPlay carregado com sucesso!", "color: yellow; font-size:16px");
-
+console.log("%cAula carregada com sucesso — Engine Duolingo ativada.", "color: yellow; font-size: 14px");
