@@ -1,49 +1,51 @@
 /* ============================================================
-   ENGLISHPLAY — SCRIPT FINAL (SESSÕES + ZIG-ZAG)
+   ENGLISHPLAY — SCRIPT FINAL SEM BUGS (2025)
    ============================================================ */
-
-/* ====== UTILITÁRIOS ====== */
 
 function $(id){ return document.getElementById(id); }
 
+/* ============================================================
+   BANCO DE DADOS LOCAL
+   ============================================================ */
+
 function dbLoad(){
-    try{ return JSON.parse(localStorage.getItem("englishplay_db")) || { users:[] }; }
-    catch{ return { users:[] }; }
+    try { return JSON.parse(localStorage.getItem("englishplay_db")) || { users:[] }; }
+    catch { return { users:[] }; }
 }
+
 function dbSave(db){ localStorage.setItem("englishplay_db", JSON.stringify(db)); }
 
 function getSession(){
-    try{ return JSON.parse(localStorage.getItem("englishplay_session")); }
-    catch{ return null; }
+    try { return JSON.parse(localStorage.getItem("englishplay_session")); }
+    catch { return null; }
 }
+
 function setSession(s){ localStorage.setItem("englishplay_session", JSON.stringify(s)); }
 
-/* ============================================================
-   VARIÁVEIS GLOBAIS
-   ============================================================ */
 
 let db = dbLoad();
 let session = getSession();
 
 /* ============================================================
-   LOGIN / CADASTRO
+   UI HELPERS
    ============================================================ */
 
-function openAuth(){
-    $("overlay").classList.remove("hidden");
-    $("authModal").classList.remove("hidden");
+function closeAllModals(){
+    document.querySelectorAll(".modal").forEach(m => m.classList.add("hidden"));
+    $("overlay").classList.add("hidden");
 }
 
-function closeAllModals(){
-    document.querySelectorAll(".modal").forEach(m=>m.classList.add("hidden"));
-    $("overlay").classList.add("hidden");
+function openModal(id){
+    closeAllModals();
+    $("overlay").classList.remove("hidden");
+    $(id).classList.remove("hidden");
 }
 
 function renderUserArea(){
     const ua = $("userArea");
 
     if(!session){
-        ua.innerHTML = `<button onclick="openAuth()">Entrar</button>`;
+        ua.innerHTML = `<button onclick="openModal('authModal')">Entrar</button>`;
         return;
     }
 
@@ -56,8 +58,9 @@ function renderSidebar(){
     const sb = $("sidebar");
     if(!session){
         sb.innerHTML = `
+            <img src="logo.png" class="profile-avatar">
             <h3 style="color:var(--yellow)">Visitante</h3>
-            <p>Entre para ver sua conta.</p>
+            <p>Faça login para ver seu progresso.</p>
         `;
         return;
     }
@@ -66,9 +69,13 @@ function renderSidebar(){
         <img src="logo.png" class="profile-avatar">
         <h3>${session.username}</h3>
         <p style="color:var(--yellow)">🔥 ${session.streak || 0} dias</p>
-        <p style="color:var(--accent)">⭐ XP: ${session.xp || 0}</p>
+        <p style="color:var(--accent)">⭐ ${session.xp || 0} XP</p>
     `;
 }
+
+/* ============================================================
+   LOGIN + CADASTRO
+   ============================================================ */
 
 $("authLoginBtn").onclick = () => {
     const user = $("authUser").value.trim();
@@ -82,7 +89,7 @@ $("authLoginBtn").onclick = () => {
     }
 
     session = found;
-    setSession(session);
+    setSession(found);
     closeAllModals();
     renderUserArea();
     renderSidebar();
@@ -93,7 +100,10 @@ $("authRegisterBtn").onclick = () => {
     const user = $("authUser").value.trim();
     const pass = $("authPass").value.trim();
 
-    if(db.users.find(u=>u.username===user)){
+    if(user.length < 3) return alert("Nome muito curto");
+    if(pass.length < 3) return alert("Senha muito curta");
+
+    if(db.users.find(u => u.username === user)){
         alert("Este nome já existe!");
         return;
     }
@@ -102,9 +112,9 @@ $("authRegisterBtn").onclick = () => {
         id: Date.now(),
         username: user,
         pass: pass,
-        completed: [],
         streak: 0,
         xp: 0,
+        completed: [],
         questionnaire: null
     };
 
@@ -112,10 +122,10 @@ $("authRegisterBtn").onclick = () => {
     dbSave(db);
 
     session = newUser;
-    setSession(session);
+    setSession(newUser);
 
     closeAllModals();
-    openQuestionnaire();
+    openModal("questionModal"); // CORRIGIDO: só abre ele
 };
 
 function logout(){
@@ -130,12 +140,9 @@ function logout(){
    QUESTIONÁRIO
    ============================================================ */
 
-function openQuestionnaire(){
-    $("overlay").classList.remove("hidden");
-    $("questionModal").classList.remove("hidden");
-}
-
 $("finishQuestion").onclick = () => {
+    if(!session) return;
+
     session.questionnaire = {
         source: $("q_source").value,
         days: $("q_days").value,
@@ -143,8 +150,8 @@ $("finishQuestion").onclick = () => {
         level: [...document.getElementsByName("q_level")].find(r=>r.checked).value
     };
 
-    const idx = db.users.findIndex(u=>u.id===session.id);
-    db.users[idx] = session;
+    const i = db.users.findIndex(u => u.id === session.id);
+    db.users[i] = session;
     dbSave(db);
 
     closeAllModals();
@@ -152,7 +159,7 @@ $("finishQuestion").onclick = () => {
 };
 
 /* ============================================================
-   SISTEMA DE SESSÕES (10 × 20 AULAS)
+   SESSÕES DE AULA (10 × 20)
    ============================================================ */
 
 const SESSION_INFO = [
@@ -169,7 +176,7 @@ const SESSION_INFO = [
 ];
 
 /* ============================================================
-   GERAR TODAS AS AULAS DO SITE
+   GERA TODAS AS SESSÕES
    ============================================================ */
 
 function renderSessions(){
@@ -179,7 +186,6 @@ function renderSessions(){
     let lessonNum = 1;
 
     for(let s = 0; s < 10; s++){
-
         const card = document.createElement("div");
         card.className = "session-card";
 
@@ -189,7 +195,7 @@ function renderSessions(){
                 Sessão ${s+1} — ${SESSION_INFO[s].title}
             </h2>
 
-            <div class="lesson-tree" id="session${s}"></div>
+            <div class="lesson-tree" id="tree${s}"></div>
         `;
 
         area.appendChild(card);
@@ -206,10 +212,7 @@ function renderSessions(){
 
             const unlocked =
                 session &&
-                (
-                    lessonNum === 1 ||
-                    session.completed.includes(lessonNum - 1)
-                );
+                (lessonNum === 1 || session.completed.includes(lessonNum - 1));
 
             if(!unlocked){
                 circle.classList.add("lesson-locked");
@@ -223,7 +226,7 @@ function renderSessions(){
 
             circle.onclick = () => {
                 if(circle.classList.contains("lesson-locked")) return;
-                pageTransition("lesson.html?id="+lessonNum);
+                goToLesson(lessonNum);
             };
 
             row.appendChild(circle);
@@ -235,50 +238,50 @@ function renderSessions(){
 }
 
 /* ============================================================
-   TRANSIÇÃO ENTRE PÁGINAS
+   TRANSIÇÃO PARA A AULA
    ============================================================ */
 
-function pageTransition(url){
+function goToLesson(id){
     document.body.classList.add("fade-out");
-    setTimeout(()=>{ location.href = url; }, 300);
+    setTimeout(() => {
+        window.location.href = `lesson.html?id=${id}`;
+    }, 250);
 }
 
-/* adicionar estilo fade-out */
+/* Fade-out style injection */
 const style = document.createElement("style");
 style.innerHTML = `
 .fade-out {
     opacity: 0;
-    transition: opacity .3s ease;
+    transition: opacity .25s ease-in-out;
 }
 `;
 document.head.appendChild(style);
 
 /* ============================================================
-   PESQUISA DE AMIGOS (VISUAL)
+   PESQUISA DE USUÁRIOS
    ============================================================ */
 
 $("searchUsers").oninput = () => {
-    const box = $("searchUsers").value.trim().toLowerCase();
-    const results = $("searchResults");
+    const text = $("searchUsers").value.trim().toLowerCase();
+    const box = $("searchResults");
 
-    if(box.length === 0){
-        results.classList.add("hidden");
+    if(text.length === 0){
+        box.classList.add("hidden");
         return;
     }
 
-    const filtered = db.users.filter(u=>u.username.toLowerCase().includes(box));
+    const filtered = db.users.filter(u => u.username.toLowerCase().includes(text));
 
-    results.innerHTML = filtered.map(u=>`
-        <div style="padding:6px 10px;border-bottom:1px solid #222;">
-            ${u.username}
-        </div>
+    box.innerHTML = filtered.map(u=>`
+        <div style="padding:8px;border-bottom:1px solid #222;">${u.username}</div>
     `).join("");
 
-    results.classList.remove("hidden");
+    box.classList.remove("hidden");
 };
 
 /* ============================================================
-   INIT
+   INICIALIZAÇÃO
    ============================================================ */
 
 renderUserArea();
