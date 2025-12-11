@@ -1,40 +1,135 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aula — EnglishPlay</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Aula — EnglishPlay</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.lesson-container{max-width:900px;margin:26px auto;padding:18px;background:var(--card);border-radius:12px;border:2px solid var(--yellow)}
+.progress-wrapper{height:12px;background:#0b0b0b;border-radius:999px;overflow:hidden;margin-bottom:12px}
+.progress-bar{height:12px;background:linear-gradient(90deg,var(--yellow),#ffdf57);width:0%}
+.exercise{padding:18px;background:#0d0d0d;border-radius:10px;border:1px solid #222}
+.options-grid{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.opt-btn{padding:10px;border-radius:10px;border:2px solid #222;background:#111;color:var(--white);cursor:pointer}
+.opt-btn.selected{border-color:var(--yellow);box-shadow:0 0 12px var(--yellow-glow)}
+.correctFlash{animation:correctFlash .9s}
+@keyframes correctFlash{0%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 30px rgba(0,255,128,0.18)}100%{box-shadow:0 0 0 transparent}}
+.wrongFlash{animation:wrongFlash .9s}
+@keyframes wrongFlash{0%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 30px rgba(255,0,0,0.18)}100%{box-shadow:0 0 0 transparent}}
+.finish-btn{margin-top:14px}
+</style>
 </head>
+<body class="page">
 
-<body class="lesson-body">
+<header class="navbar">
+  <div class="nav-left">
+    <img src="logo.png" class="logo-small" />
+    <div class="brand-area"><div class="brand">EnglishPlay</div><div class="subtitle">Aula</div></div>
+  </div>
+  <div class="nav-middle"></div>
+  <div class="nav-right"><button class="btn ghost" onclick="location.href='index.html'">Voltar</button></div>
+</header>
 
-    <!-- HEADER -->
-    <header class="lesson-header">
-        <div class="lesson-header-left">
-            <img src="logo.png" class="logo-small">
-            <h1>EnglishPlay</h1>
-        </div>
-        <button class="btn ghost" onclick="location.href='index.html'">← Sair da Aula</button>
-    </header>
+<main class="lesson-container">
+  <div class="progress-wrapper"><div id="progressBar" class="progress-bar"></div></div>
+  <h2 id="lessonTitle">Aula</h2>
+  <div id="exerciseContainer" class="exercise">Carregando...</div>
+  <div style="display:flex;gap:12px;margin-top:12px">
+    <button id="verifyBtn" class="btn">Verificar</button>
+    <button id="nextBtn" class="btn ghost">Pular</button>
+  </div>
+</main>
 
-    <!-- BARRA DE PROGRESSO -->
-    <div class="progress-wrapper">
-        <div id="progressBar" class="progress-bar"></div>
-    </div>
+<script>
+// lesson engine (lightweight) — parse id from URL, load 5 exercises template, progress, save completion
 
-    <!-- CONTEÚDO DO EXERCÍCIO -->
-    <main id="exerciseContainer" class="exercise-container">
-        Carregando exercício...
-    </main>
+function getSession(){ try{ return JSON.parse(localStorage.getItem('englishplay_session')); } catch(e){ return null } }
+function setSession(s){ localStorage.setItem('englishplay_session', JSON.stringify(s)); }
+function dbLoad(){ try{ return JSON.parse(localStorage.getItem('englishplay_db')) || { users:[] }; } catch { return { users:[] }; } }
+function dbSave(db){ localStorage.setItem('englishplay_db', JSON.stringify(db)); }
 
-    <!-- BOTÃO DE VERIFICAR -->
-    <div class="verify-wrapper">
-        <button id="verifyBtn" class="btn verify-btn" disabled>Verificar</button>
-    </div>
+const params = new URLSearchParams(location.search);
+const lessonId = Number(params.get('id')) || 1;
+const titleEl = document.getElementById('lessonTitle');
+const container = document.getElementById('exerciseContainer');
+const progressBar = document.getElementById('progressBar');
+const verifyBtn = document.getElementById('verifyBtn');
+const nextBtn = document.getElementById('nextBtn');
 
-    <!-- CONFETTI É GERADO PELO SCRIPT -->
+titleEl.textContent = `Aula ${lessonId}`;
 
-    <script src="script.js"></script>
+let exercises = [
+  { type:'multiple_choice', question:'How are you?', options:['Como vai você?','Onde mora?','Qual seu nome?'], answer:'Como vai você?' },
+  { type:'fill_blank', sentence:'I ___ a student.', answer:'am' },
+  { type:'drag_drop', sentence:'I like learning English', words:['I','like','learning','English'], answer:['I','like','learning','English'] },
+  { type:'listen_choice', text:'Good morning', options:['Boa noite','Bom dia','Até logo'], answer:'Bom dia' },
+  { type:'translate', original:'I have a dog', answer:'eu tenho um cachorro' }
+];
+
+let idx=0;
+let userAnswer=null;
+
+function updateProgress(){ progressBar.style.width = (idx/exercises.length*100)+'%'; }
+
+function render(){
+  userAnswer=null; verifyBtn.disabled=true;
+  const ex = exercises[idx];
+  updateProgress();
+  if(!ex) return finish();
+  if(ex.type==='multiple_choice'){
+    container.innerHTML = `<h3>${ex.question}</h3><div class="options-grid">${ex.options.map(o=>`<button class="opt-btn">${o}</button>`).join('')}</div>`;
+    document.querySelectorAll('.opt-btn').forEach(b=>{
+      b.onclick=()=>{ document.querySelectorAll('.opt-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); userAnswer=b.textContent; verifyBtn.disabled=false; }
+    });
+  } else if(ex.type==='fill_blank'){
+    container.innerHTML = `<h3>Complete: ${ex.sentence.replace('___','<input id="fillInput" class="fill-input">')}</h3>`;
+    const fi = document.getElementById('fillInput'); fi.oninput=()=>{ userAnswer=fi.value.trim().toLowerCase(); verifyBtn.disabled = !userAnswer; }
+  } else if(ex.type==='drag_drop'){
+    const bank = ex.words.sort(()=>Math.random()-0.5).map(w=>`<div class="drag-word">${w}</div>`).join('');
+    container.innerHTML = `<h3>Monte a frase:</h3><div id="slotArea" style="min-height:40px;border:1px dashed #222;padding:8px;border-radius:8px"></div><div style="margin-top:12px" id="bank">${bank}</div>`;
+    document.querySelectorAll('.drag-word').forEach(w=>{
+      w.onclick=()=>{
+        const slot = document.getElementById('slotArea');
+        const el = document.createElement('span'); el.textContent = w.textContent; el.style.marginRight='8px';
+        slot.appendChild(el); w.remove();
+        userAnswer = Array.from(slot.childNodes).map(n=>n.textContent).join(' ');
+        verifyBtn.disabled = !userAnswer;
+      }
+    });
+  } else if(ex.type==='listen_choice'){
+    container.innerHTML = `<h3>Ouça:</h3><button id="playBtn" class="btn">▶ Ouvir</button><div class="options-grid" id="optGrid">${ex.options.map(o=>`<button class="opt-btn">${o}</button>`).join('')}</div>`;
+    document.getElementById('playBtn').onclick=()=>{ const msg=new SpeechSynthesisUtterance(ex.text); msg.lang='en-US'; speechSynthesis.speak(msg); }
+    document.querySelectorAll('.opt-btn').forEach(b=>{ b.onclick=()=>{ document.querySelectorAll('.opt-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); userAnswer=b.textContent; verifyBtn.disabled=false; }});
+  } else if(ex.type==='translate'){
+    container.innerHTML = `<h3>Traduza:</h3><p>${ex.original}</p><textarea id="translate" rows="2"></textarea>`;
+    document.getElementById('translate').oninput = (e)=>{ userAnswer = e.target.value.trim().toLowerCase(); verifyBtn.disabled = !userAnswer; }
+  }
+}
+
+verifyBtn.onclick = () => {
+  const ex = exercises[idx];
+  let correct=false;
+  if(ex.type==='multiple_choice' || ex.type==='listen_choice') correct = userAnswer === ex.answer;
+  if(ex.type==='fill_blank') correct = userAnswer === ex.answer.toLowerCase();
+  if(ex.type==='drag_drop') correct = userAnswer === ex.answer.join(' ');
+  if(ex.type==='translate') correct = userAnswer === ex.answer.toLowerCase();
+  if(correct){ container.classList.add('correctFlash'); setTimeout(()=>{container.classList.remove('correctFlash'); idx++; if(idx>=exercises.length) finish(); else render();},900); } 
+  else { container.classList.add('wrongFlash'); setTimeout(()=>container.classList.remove('wrongFlash'),900); }
+}
+
+nextBtn.onclick = ()=>{ idx++; if(idx>=exercises.length) finish(); else render(); }
+
+function finish(){
+  const s = sessionLoad();
+  if(s){ s.completed = s.completed || []; if(!s.completed.includes(lessonId)) s.completed.push(lessonId); sessionSave(s); const DB = dbLoad(); const i = DB.users.findIndex(u=>u.id===s.id); if(i>=0){ DB.users[i]=s; dbSave(DB); } }
+  container.innerHTML = `<h2>Parabéns! Aula concluída 🎉</h2><button class="btn" onclick="location.href='index.html'">Voltar</button>`;
+  progressBar.style.width = '100%';
+}
+
+/* start */
+render();
+</script>
+
 </body>
 </html>
