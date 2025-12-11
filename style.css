@@ -1,5 +1,6 @@
 /* -----------------------------------------
-   CONFIGURAÇÃO GLOBAL
+   ESTILO GERAL DO SISTEMA ENGLISHPLAY
+   Criado do zero – versão final otimizada
 ----------------------------------------- */
 
 * {
@@ -11,14 +12,14 @@
 
 body {
     background: #000;
-    color: white;
+    color: #fff;
     overflow-x: hidden;
 }
 
+/* Suavidade global */
 html, body, button, input, select {
     transition: 0.25s ease;
 }
-
 
 /* -----------------------------------------
    NAVBAR
@@ -26,7 +27,7 @@ html, body, button, input, select {
 
 .navbar {
     width: 100%;
-    height: 70px;
+    height: 75px;
     background: #0d0d0d;
     border-bottom: 3px solid #ffcc00;
     display: flex;
@@ -36,103 +37,99 @@ html, body, button, input, select {
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 1000;
+    z-index: 99999;
 }
 
-.nav-logo {
+.nav-left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     cursor: pointer;
 }
 
-.nav-logo img {
-    width: 48px;
-    height: 48px;
+.nav-left img {
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
 }
 
 .nav-title {
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 700;
     color: #ffcc00;
 }
 
 .search-box {
     width: 420px;
-    height: 38px;
+    height: 42px;
     background: #1a1a1a;
     border: 2px solid #333;
-    border-radius: 20px;
-    padding: 5px 20px;
+    border-radius: 22px;
+    padding: 6px 18px;
     color: white;
 }
 
-.nav-user {
+.btn-yellow {
     background: #ffcc00;
-    padding: 8px 22px;
-    border-radius: 25px;
+    padding: 9px 28px;
+    border-radius: 22px;
     font-weight: 600;
-    color: black;
+    border: none;
     cursor: pointer;
+    color: black;
 }
 
-.nav-user:hover {
+.btn-yellow:hover {
     transform: scale(1.05);
 }
 
-
 /* -----------------------------------------
-   MAIN CONTAINER
+   CONTAINER PRINCIPAL
 ----------------------------------------- */
 
 .main {
-    margin-top: 110px;
-    padding: 20px;
+    padding-top: 110px;
     width: 100%;
     display: flex;
     justify-content: center;
 }
 
-
 /* -----------------------------------------
-   PERFIL LATERAL
+   CARTÃO DE PERFIL LATERAL
 ----------------------------------------- */
 
 .profile-card {
-    width: 260px;
+    width: 270px;
     background: #0f0f0f;
     border: 3px solid #ffcc00;
-    border-radius: 20px;
     padding: 25px;
+    border-radius: 20px;
     text-align: center;
+    height: fit-content;
     position: sticky;
     top: 110px;
-    height: fit-content;
 }
 
 .profile-card img {
-    width: 130px;
-    height: 130px;
+    width: 140px;
+    height: 140px;
     border-radius: 50%;
-    margin-bottom: 12px;
 }
 
 .profile-btn {
-    margin-top: 15px;
-    background: #ffcc00;
+    margin-top: 18px;
     width: 100%;
     padding: 10px 0;
+    background: #ffcc00;
+    color: black;
     border-radius: 20px;
     font-weight: 600;
-    color: black;
     cursor: pointer;
 }
 
 .profile-btn:hover {
     transform: scale(1.05);
 }
-
 
 /* -----------------------------------------
    SESSÕES DE AULAS
@@ -141,10 +138,10 @@ html, body, button, input, select {
 .section-box {
     width: 900px;
     background: #111;
-    padding: 25px;
+    padding: 28px;
     border-radius: 20px;
     border: 3px solid #ffcc00;
-    margin-bottom: 40px;
+    margin-bottom: 45px;
 }
 
 .section-title {
@@ -157,23 +154,22 @@ html, body, button, input, select {
 }
 
 .section-title img {
-    width: 35px;
+    width: 34px;
 }
 
-
 /* -----------------------------------------
-   LIÇÕES (CÍRCULOS)
+   CÍRCULOS DAS LIÇÕES
 ----------------------------------------- */
 
 .lessons-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 25px;
+    gap: 28px;
 }
 
 .lesson-circle {
-    width: 110px;
-    height: 110px;
+    width: 115px;
+    height: 115px;
     border-radius: 50%;
     background: #1a1a1a;
     border: 3px solid #444;
@@ -188,12 +184,12 @@ html, body, button, input, select {
 }
 
 .lesson-circle:hover {
-    transform: scale(1.08);
+    transform: scale(1.1);
     border-color: #ffcc00;
 }
 
 .lock-icon {
-    font-size: 32px;
+    font-size: 30px;
     color: #ffcc00;
 }
 
@@ -202,9 +198,8 @@ html, body, button, input, select {
     background: #222;
 }
 
-
 /* -----------------------------------------
-   MODAIS (login, cadastro, questionário)
+   MODAIS / JANELAS
 ----------------------------------------- */
 
 .modal-bg {
@@ -212,24 +207,24 @@ html, body, button, input, select {
     top: 0;
     left: 0;
     width: 100%;
-    height: 100vh;
+    height: 100%;
     background: rgba(0,0,0,0.75);
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    z-index: 999999;
 }
 
 .modal-box {
     width: 420px;
     background: #111;
     border: 3px solid #ffcc00;
-    border-radius: 20px;
+    border-radius: 22px;
     padding: 25px;
-    animation: pop 0.3s ease;
+    animation: popup 0.25s ease;
 }
 
-@keyframes pop {
+@keyframes popup {
     from { transform: scale(0.85); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
 }
@@ -237,71 +232,61 @@ html, body, button, input, select {
 .modal-box input,
 .modal-box select {
     width: 100%;
-    padding: 12px;
+    padding: 11px;
     border-radius: 12px;
     margin-bottom: 15px;
     background: #1a1a1a;
-    color: white;
     border: 2px solid #333;
+    color: #fff;
 }
 
+/* Botão principal */
 .btn-main {
+    width: 100%;
+    padding: 12px;
     background: #ffcc00;
     color: black;
-    padding: 12px 20px;
-    border-radius: 15px;
-    font-weight: 600;
+    border-radius: 16px;
+    font-weight: 700;
     cursor: pointer;
-    text-align: center;
-    width: 100%;
 }
 
 .btn-main:hover {
     transform: scale(1.05);
 }
 
-
 /* -----------------------------------------
-   FEEDBACK DE RESPOSTAS
+   EXERCÍCIOS
 ----------------------------------------- */
+
+.word-bubble {
+    display: inline-block;
+    background: #ffcc00;
+    color: black;
+    padding: 10px 18px;
+    border-radius: 20px;
+    margin: 8px;
+    font-weight: 600;
+    cursor: grab;
+    transition: 0.2s ease;
+}
+
+.word-bubble:hover {
+    transform: scale(1.12);
+}
 
 .correct-flash {
     animation: flashGreen 0.6s ease;
-}
-
-@keyframes flashGreen {
-    0% { background: #1a1a1a; }
-    50% { background: #3cb043; }
-    100% { background: #1a1a1a; }
 }
 
 .error-flash {
     animation: flashRed 0.6s ease;
 }
 
+@keyframes flashGreen {
+    50% { background: #3cb043; }
+}
+
 @keyframes flashRed {
-    0% { background: #1a1a1a; }
     50% { background: #b80000; }
-    100% { background: #1a1a1a; }
-}
-
-
-/* -----------------------------------------
-   PALAVRAS ARRASTÁVEIS
------------------------------------------ */
-
-.word-bubble {
-    background: #ffcc00;
-    color: black;
-    padding: 10px 18px;
-    border-radius: 20px;
-    margin: 8px;
-    display: inline-block;
-    cursor: grab;
-    font-weight: 600;
-    transition: transform 0.2s ease;
-}
-
-.word-bubble:hover {
-    transform: scale(1.12);
 }
