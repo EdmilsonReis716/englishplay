@@ -1,54 +1,52 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EnglishPlay — Seu portal de estudos</title>
 
-    <link rel="stylesheet" href="style.css" />
-    <script src="storage.js" defer></script>
-    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="style.css">
 </head>
-
-<body class="fade-in">
+<body>
 
     <!-- NAVBAR -->
     <header class="navbar">
-        <div class="navbar-left">
-            <img src="logo.png" class="nav-logo" />
+        <div class="nav-logo" onclick="location.href='index.html'">
+            <img src="logo.png" alt="logo">
             <span class="nav-title">EnglishPlay</span>
         </div>
 
-        <div class="navbar-center">
-            <input type="text" id="pesquisaUsuarios" placeholder="Pesquisar usuários..." />
-        </div>
+        <input type="text" class="search-box" id="searchUsers" placeholder="Pesquisar usuários..." oninput="searchUsers()">
 
-        <div class="navbar-right">
-            <button id="btnPerfilNav"></button>
-            <button class="btn-logout" onclick="logout()">Sair</button>
-        </div>
+        <div class="nav-user" onclick="logout()">Sair</div>
     </header>
 
-    <!-- SIDEBAR DO USUÁRIO -->
-    <aside class="sidebar">
-        <img id="userFoto" class="user-avatar" />
-        <h2 id="userNome"></h2>
-
-        <p><span id="dias"></span> 🔥 dias</p>
-        <p><span id="xp"></span> ⭐ XP</p>
-
-        <button onclick="irPerfil()" class="btn">Perfil</button>
-        <button onclick="logout()" class="btn btn-danger">Sair</button>
-    </aside>
-
     <!-- CONTEÚDO PRINCIPAL -->
-    <main class="conteudo">
+    <div class="main">
 
-        <h1 class="titulo-secao">Sessões de Estudo</h1>
+        <!-- PERFIL LATERAL -->
+        <aside class="profile-card">
+            <img id="profilePic" src="logo.png">
+            <h3 id="profileName">Carregando...</h3>
 
-        <div id="listaSessoes"></div>
+            <p><span id="fire">🔥 0 dias</span></p>
+            <p><span id="xp">⭐ 0 XP</span></p>
 
-    </main>
+            <button class="profile-btn" onclick="location.href='perfil.html'">Perfil</button>
+        </aside>
 
+        <!-- SESSÕES DE AULAS -->
+        <section style="margin-left: 40px;">
+
+            <!-- Sessões serão inseridas dinamicamente -->
+            <div id="sessionsContainer"></div>
+
+        </section>
+    </div>
+
+    <!-- MODAL LOGIN/CADASTRO/QUESTIONÁRIO É ADICIONADO PELO SCRIPT -->
+    <div id="modalArea"></div>
+
+<script src="script.js"></script>
 </body>
 </html>
