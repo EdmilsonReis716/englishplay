@@ -1,69 +1,301 @@
-/* style.css — EnglishPlay theme (complete) */
+/* ------------------------------
+   ESTILO GERAL DO SISTEMA
+--------------------------------*/
 
-:root{
-  --bg:#000;
-  --card:#101214;
-  --card-light:#16181b;
-  --yellow:#f5c518;
-  --yellow-glow:#ffdf57;
-  --accent:#00ff80;
-  --muted:#9ca0a8;
-  --white:#fff;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
 }
 
-*{box-sizing:border-box;font-family:Inter,Arial, sans-serif}
-body{background:var(--bg);color:var(--white);margin:0;min-height:100vh}
-a{color:inherit}
+body {
+    background: #000;
+    color: white;
+    overflow-x: hidden;
+}
 
-/* NAVBAR */
-.navbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#070707;border-bottom:3px solid var(--yellow);position:sticky;top:0;z-index:100}
-.nav-left{display:flex;align-items:center;gap:12px}
-.logo-small{width:56px;height:56px;border-radius:50%;background:var(--yellow);padding:6px;object-fit:cover}
-.brand{font-weight:900;color:var(--yellow);font-size:22px}
-.subtitle{font-size:12px;color:var(--muted)}
+/* Suave transição global */
+html, body, button, input, select {
+    transition: 0.25s ease;
+}
 
-/* SEARCH */
-.nav-middle{flex:1;display:flex;justify-content:center;position:relative}
-.nav-middle input{width:60%;max-width:560px;padding:10px 14px;border-radius:999px;border:2px solid #222;background:#0d0d0d;color:var(--white)}
-.search-results{position:absolute;top:46px;width:60%;max-width:560px;background:#0e0e0e;border-radius:10px;padding:10px;border:1px solid #222}
+/* ------------------------------
+   NAVBAR
+--------------------------------*/
 
-/* NAV RIGHT */
-.nav-right{display:flex;gap:12px;align-items:center}
-.btn{padding:10px 16px;border-radius:14px;background:var(--yellow);color:#000;font-weight:800;border:none;cursor:pointer;box-shadow:0 6px 14px rgba(0,0,0,0.4)}
-.btn.ghost{background:transparent;border:2px solid var(--yellow);color:var(--yellow)}
+.navbar {
+    width: 100%;
+    height: 70px;
+    background: #0d0d0d;
+    border-bottom: 3px solid #ffcc00;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 35px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
 
-/* LAYOUT */
-.main-layout{display:grid;grid-template-columns:260px 1fr;gap:20px;max-width:1300px;margin:20px auto;padding:0 18px}
-.sidebar{background:var(--card);border-radius:14px;padding:18px;border:1px solid #222}
-.profile-avatar{width:110px;height:110px;border-radius:50%;border:4px solid var(--yellow);object-fit:cover;margin:auto;display:block}
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
 
-/* SESSIONS */
-.sessions-area{display:flex;flex-direction:column;gap:28px;padding-bottom:60px}
-.session-card{background:var(--card-light);border-radius:18px;padding:16px;border:2px solid var(--yellow);box-shadow:0 0 18px rgba(255,215,0,0.08)}
-.session-title{font-size:20px;font-weight:900;color:var(--yellow);display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.lesson-tree{display:flex;flex-wrap:wrap;gap:20px;padding:12px}
-.lesson-circle{width:90px;height:90px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;border:4px solid var(--yellow);background:#0f1012;color:var(--yellow);cursor:pointer;transition:transform .18s,box-shadow .18s}
-.lesson-circle:hover{transform:scale(1.08);box-shadow:0 0 18px var(--yellow-glow)}
-.lesson-locked{border-color:#444;color:#666;background:#0b0b0b}
-.lesson-done{background:var(--accent);border-color:#00d46c;color:#001b12}
+.nav-logo img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+}
 
-/* MODAL */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:50}
-.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:60}
-.modal-card{background:var(--card);padding:18px;border-radius:12px;border:2px solid var(--yellow);width:420px;max-width:95%}
-.hidden{display:none}
+.nav-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ffcc00;
+}
 
-/* PIX box */
-.pix-box{display:flex;gap:12px;align-items:center;margin:8px 0}
-.pix-key{background:#0e0e0e;padding:10px;border-radius:8px;border:1px solid #222;word-break:break-all}
+.search-box {
+    width: 420px;
+    height: 40px;
+    background: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 20px;
+    padding: 5px 20px;
+    color: white;
+}
 
-/* FORM STYLES */
-input,select,textarea{width:100%;padding:10px;border-radius:10px;border:2px solid #222;background:#0d0d0d;color:var(--white);margin-top:8px}
-.row{display:flex;gap:12px;margin-top:12px}
+.nav-user {
+    background: #ffcc00;
+    padding: 8px 25px;
+    border-radius: 25px;
+    font-weight: 600;
+    color: black;
+    cursor: pointer;
+}
 
-/* responsive */
-@media (max-width:900px){
-  .main-layout{grid-template-columns:1fr;padding:0 12px}
-  .nav-middle input{width:78%}
-  .lesson-circle{width:76px;height:76px}
+.nav-user:hover {
+    transform: scale(1.05);
+}
+
+/* ------------------------------
+   CONTAINER PRINCIPAL
+--------------------------------*/
+
+.main {
+    margin-top: 110px;
+    padding: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* ------------------------------
+   CARTÃO DO PERFIL LATERAL
+--------------------------------*/
+
+.profile-card {
+    width: 260px;
+    background: #0f0f0f;
+    border: 3px solid #ffcc00;
+    border-radius: 20px;
+    padding: 25px;
+    text-align: center;
+    position: sticky;
+    top: 110px;
+    height: fit-content;
+}
+
+.profile-card img {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    margin-bottom: 12px;
+}
+
+.profile-btn {
+    margin-top: 15px;
+    background: #ffcc00;
+    width: 100%;
+    padding: 10px 0;
+    border-radius: 20px;
+    font-weight: 600;
+    color: black;
+    cursor: pointer;
+}
+
+.profile-btn:hover {
+    transform: scale(1.05);
+}
+
+/* ------------------------------
+   SESSÕES DE AULAS
+--------------------------------*/
+
+.section-box {
+    width: 900px;
+    background: #111;
+    padding: 25px;
+    border-radius: 20px;
+    border: 3px solid #ffcc00;
+    margin-bottom: 40px;
+}
+
+.section-title {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title img {
+    width: 35px;
+}
+
+/* ------------------------------
+   CÍRCULOS DAS LIÇÕES
+--------------------------------*/
+
+.lessons-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 25px;
+}
+
+.lesson-circle {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    border: 3px solid #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 700;
+    cursor: pointer;
+    position: relative;
+    transition: 0.3s ease;
+}
+
+.lesson-circle:hover {
+    transform: scale(1.08);
+    border-color: #ffcc00;
+}
+
+/* Ícone do cadeado */
+.lock-icon {
+    font-size: 30px;
+    color: #ffcc00;
+}
+
+/* Lições desbloqueadas */
+.unlocked {
+    border-color: #ffcc00;
+    background: #222;
+}
+
+/* ------------------------------
+   MODAIS (questionário, login, etc)
+--------------------------------*/
+
+.modal-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(0,0,0,0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal-box {
+    width: 420px;
+    background: #111;
+    border: 3px solid #ffcc00;
+    border-radius: 20px;
+    padding: 25px;
+    animation: pop 0.3s ease;
+}
+
+@keyframes pop {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Inputs */
+.modal-box input, 
+.modal-box select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    background: #1a1a1a;
+    color: white;
+    border: 2px solid #333;
+}
+
+/* Botão principal */
+.btn-main {
+    background: #ffcc00;
+    color: black;
+    padding: 10px 20px;
+    border-radius: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    width: 100%;
+}
+
+.btn-main:hover {
+    transform: scale(1.05);
+}
+
+/* ------------------------------
+   ANIMAÇÕES DE FEEDBACK
+--------------------------------*/
+
+.correct-flash {
+    animation: flashGreen 0.6s ease;
+}
+
+@keyframes flashGreen {
+    from { background: #1a1a1a; }
+    50% { background: #3cb043; }
+    to { background: #1a1a1a; }
+}
+
+.error-flash {
+    animation: flashRed 0.6s ease;
+}
+
+@keyframes flashRed {
+    from { background: #1a1a1a; }
+    50% { background: #b80000; }
+    to { background: #1a1a1a; }
+}
+
+/* Palavras arrastáveis */
+.word-bubble {
+    background: #ffcc00;
+    color: black;
+    padding: 10px 18px;
+    border-radius: 20px;
+    margin: 8px;
+    display: inline-block;
+    cursor: grab;
+    font-weight: 600;
+    transition: transform 0.2s ease;
+}
+
+.word-bubble:hover {
+    transform: scale(1.12);
 }
