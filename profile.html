@@ -1,314 +1,248 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Seu Perfil — EnglishPlay</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil — EnglishPlay</title>
 
-    <link rel="stylesheet" href="style.css" />
-    <script src="storage.js" defer></script>
-    <script src="script.js" defer></script>
-
-    <style>
-        .profile-container {
-            max-width: 900px;
-            margin: 130px auto;
-            background: #111;
-            padding: 35px;
-            border: 3px solid #ffcc00;
-            border-radius: 20px;
-            animation: fadeIn .5s ease;
-        }
-
-        .pf-mascot {
-            width: 130px;
-            display: block;
-            margin: 0 auto 15px auto;
-            animation: float 2.5s infinite ease-in-out;
-        }
-
-        .pf-title {
-            color: #ffcc00;
-            font-size: 32px;
-            font-weight: 700;
-            text-align: center;
-        }
-
-        .pf-grid {
-            margin-top: 35px;
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            gap: 25px;
-        }
-
-        .pf-card {
-            background: #0c0c0c;
-            padding: 20px;
-            border-radius: 15px;
-            border: 2px solid #333;
-        }
-
-        .pf-avatar {
-            width: 160px;
-            height: 160px;
-            border-radius: 50%;
-            margin: 10px auto;
-            display: block;
-            border: 4px solid #ffcc00;
-            object-fit: cover;
-        }
-
-        .pf-stat {
-            text-align: center;
-            font-size: 18px;
-            margin-top: 10px;
-            color: #ccc;
-        }
-
-        .pf-box label {
-            font-weight: 600;
-            display: block;
-            margin-top: 15px;
-        }
-
-        .pf-input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 12px;
-            background: #1a1a1a;
-            border: 2px solid #333;
-            color: white;
-            margin-top: 5px;
-        }
-
-        .friend-item {
-            background: #1a1a1a;
-            padding: 12px;
-            border-radius: 12px;
-            border: 2px solid #333;
-            margin-bottom: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- NAVBAR -->
 <header class="navbar">
-    <div class="navbar-left">
-        <img src="logo.png" class="nav-logo" />
+    <div class="nav-logo" onclick="location.href='index.html'">
+        <img src="logo.png">
         <span class="nav-title">EnglishPlay</span>
     </div>
 
-    <div class="navbar-right">
-        <button onclick="window.location.href='index.html'" class="btn-logout">Voltar</button>
-        <button onclick="logout()" class="btn-logout">Sair</button>
-    </div>
+    <input type="text" class="search-box" placeholder="Pesquisar..." disabled>
+
+    <div class="nav-user" onclick="logout()">Sair</div>
 </header>
 
 
-<div class="profile-container">
+<div class="main" style="justify-content:center; margin-top:130px;">
+    <div class="section-box" style="width:600px;">
 
-    <img src="logo.png" class="pf-mascot">
+        <h2 class="section-title">👤 Meu Perfil</h2>
 
-    <h1 class="pf-title">Seu Perfil</h1>
+        <div style="text-align:center; margin-bottom:20px;">
 
-    <div class="pf-grid">
+            <!-- FOTO -->
+            <img id="profileImg" src="logo.png" 
+                style="width:160px; height:160px; border-radius:50%; cursor:pointer;"
+                onclick="document.getElementById('imgInput').click()">
 
-        <!-- LADO ESQUERDO -->
-        <div class="pf-card">
+            <input id="imgInput" type="file" accept="image/*" style="display:none;" onchange="changeAvatar()">
 
-            <img id="pfAvatar" class="pf-avatar">
+            <h2 id="pName" style="margin-top:12px;"></h2>
 
-            <h2 id="pfName" style="text-align:center; margin-top:10px;"></h2>
-
-            <p class="pf-stat">🔥 <span id="pfStreak"></span> dias</p>
-            <p class="pf-stat">⭐ <span id="pfXp"></span> XP</p>
-
-            <hr style="margin: 20px 0; border-color: #333;">
-
-            <div class="pf-box">
-                <label>Mudar avatar (URL):</label>
-                <input id="newAvatar" class="pf-input" placeholder="https://...">
-                <button class="btn-main" onclick="saveAvatar()">Salvar Avatar</button>
-
-                <label>Mudar nome (até 3 vezes):</label>
-                <input id="newName" class="pf-input" placeholder="Novo nome">
-                <button class="btn-main" onclick="saveName()">Salvar Nome</button>
-            </div>
+            <!-- Alterar nome -->
+            <input id="newNameInput" placeholder="Novo nome..." 
+                   style="padding:12px; width:75%; border-radius:12px; margin-top:12px; background:#1a1a1a; color:white; border:2px solid #333;">
+            <button class="btn-main" onclick="updateName()" style="margin-top:10px;">Alterar Nome</button>
 
         </div>
 
+        <hr style="border-color:#444; margin:20px 0;">
 
-        <!-- LADO DIREITO -->
-        <div class="pf-card">
+        <!-- INFORMACOES -->
+        <h3>⭐ XP Total:</h3>
+        <p id="pXP"></p>
 
-            <h2 style="color:#ffcc00; text-align:center;">Amigos</h2>
+        <h3 style="margin-top:12px;">🔥 Dias consecutivos:</h3>
+        <p id="pStreak"></p>
 
-            <div id="friendList"></div>
+        <hr style="border-color:#444; margin:20px 0;">
 
-            <hr style="margin: 20px 0; border-color: #333;">
+        <!-- AMIGOS -->
+        <h2 class="section-title">🤝 Amigos</h2>
 
-            <h2 style="color:#ffcc00; text-align:center;">Pedidos de Amizade</h2>
-
-            <div id="requestList"></div>
-
+        <div id="friendsList" style="margin-bottom:25px;">
+            Carregando amigos...
         </div>
+
+        <!-- PEDIDOS DE AMIZADE -->
+        <h2 class="section-title">📨 Pedidos de amizade</h2>
+
+        <div id="requestsList">
+            Carregando pedidos...
+        </div>
+
+        <hr style="border-color:#444; margin:25px 0;">
+
+        <button class="btn-main" onclick="deleteAccount()" style="background:red; color:white;">
+            Excluir Conta
+        </button>
 
     </div>
-
 </div>
 
+
 <script>
-/* ===============================
-   CARREGAR PERFIL
-================================*/
+/* =======================================================
+   VERIFICAÇÃO DE LOGIN
+======================================================= */
 
-let user = JSON.parse(localStorage.getItem("currentUser"));
-let allUsers = JSON.parse(localStorage.getItem("users")) || {};
+let SESSION = JSON.parse(localStorage.getItem("session"));
+let USERS = JSON.parse(localStorage.getItem("users"));
 
-if (!user) window.location.href = "auth.html";
-
-document.getElementById("pfAvatar").src = user.avatar || "logo.png";
-document.getElementById("pfName").innerText = user.name;
-document.getElementById("pfStreak").innerText = user.streak || 0;
-document.getElementById("pfXp").innerText = user.xp || 0;
-
-
-/* ===============================
-   SALVAR AVATAR
-================================*/
-
-function saveAvatar() {
-    const url = document.getElementById("newAvatar").value.trim();
-    if (!url) return alert("URL inválida!");
-
-    user.avatar = url;
-    updateUser();
+if (!SESSION) {
+    window.location.href = "auth.html";
 }
 
 
-/* ===============================
-   MUDAR NOME (até 3 vezes)
-================================*/
+/* =======================================================
+   CARREGAR DADOS DO PERFIL
+======================================================= */
 
-function saveName() {
-    let novo = document.getElementById("newName").value.trim();
-    if (!novo) return alert("Nome inválido!");
+function loadProfile() {
+    document.getElementById("profileImg").src = SESSION.avatar || "logo.png";
+    document.getElementById("pName").innerText = SESSION.name;
+    document.getElementById("pXP").innerText = SESSION.xp + " XP";
+    document.getElementById("pStreak").innerText = SESSION.streak + " dias";
 
-    user.nameChanges = user.nameChanges || 0;
+    loadFriends();
+    loadRequests();
+}
 
-    if (user.nameChanges >= 3)
-        return alert("Você atingiu o limite de troca de nome!");
+document.addEventListener("DOMContentLoaded", loadProfile);
 
-    if (allUsers[novo])
-        return alert("Este nome já está em uso!");
 
-    // Registrar troca
-    allUsers[user.name] = null;
-    delete allUsers[user.name];
+/* =======================================================
+   ALTERAR AVATAR
+======================================================= */
 
-    user.name = novo;
-    user.nameChanges++;
+function changeAvatar() {
+    let input = document.getElementById("imgInput").files[0];
+    if (!input) return;
 
-    allUsers[novo] = user;
+    let reader = new FileReader();
+    reader.onload = () => {
+        SESSION.avatar = reader.result;
+        USERS[SESSION.name].avatar = reader.result;
 
-    localStorage.setItem("users", JSON.stringify(allUsers));
-    localStorage.setItem("currentUser", JSON.stringify(user));
+        localStorage.setItem("users", JSON.stringify(USERS));
+        localStorage.setItem("session", JSON.stringify(SESSION));
 
-    alert("Nome atualizado!");
-    location.reload();
+        loadProfile();
+    };
+
+    reader.readAsDataURL(input);
 }
 
 
-/* ===============================
-   LISTAR AMIGOS
-================================*/
+/* =======================================================
+   ALTERAR NOME (máx. 3x)
+======================================================= */
 
-function renderFriends() {
-    const fl = document.getElementById("friendList");
-    fl.innerHTML = "";
+SESSION.nameChanges = SESSION.nameChanges || 0;
 
-    const arr = user.friends || [];
+function updateName() {
+    let newName = document.getElementById("newNameInput").value.trim();
 
-    if (arr.length === 0) {
-        fl.innerHTML = "<p>Você não tem amigos ainda.</p>";
+    if (newName.length < 3) {
+        alert("Nome muito curto!");
         return;
     }
 
-    arr.forEach(f => {
-        fl.innerHTML += `
-            <div class="friend-item">
-                ${f}
-            </div>
-        `;
-    });
-}
-
-
-/* ===============================
-   LISTAR PEDIDOS
-================================*/
-
-function renderRequests() {
-    const rl = document.getElementById("requestList");
-    rl.innerHTML = "";
-
-    const arr = user.requests || [];
-
-    if (arr.length === 0) {
-        rl.innerHTML = "<p>Nenhum pedido pendente.</p>";
+    if (USERS[newName]) {
+        alert("Nome já existe!");
         return;
     }
 
-    arr.forEach(r => {
-        rl.innerHTML += `
-            <div class="friend-item">
-                ${r}
-                <button class="btn-main" onclick="acceptFriend('${r}')">Aceitar</button>
-            </div>
-        `;
-    });
+    if (SESSION.nameChanges >= 3) {
+        alert("Você já atingiu o limite de mudanças.");
+        return;
+    }
+
+    let oldName = SESSION.name;
+
+    USERS[newName] = USERS[oldName];
+    delete USERS[oldName];
+
+    SESSION.name = newName;
+    SESSION.nameChanges++;
+
+    localStorage.setItem("users", JSON.stringify(USERS));
+    localStorage.setItem("session", JSON.stringify(SESSION));
+
+    loadProfile();
+    alert("Nome alterado com sucesso!");
 }
 
 
-/* ===============================
-   ACEITAR AMIZADE
-================================*/
+/* =======================================================
+   LISTA DE AMIGOS
+======================================================= */
 
-function acceptFriend(name) {
-    user.requests = user.requests.filter(n => n !== name);
-    user.friends = user.friends || [];
-    user.friends.push(name);
+function loadFriends() {
+    let list = document.getElementById("friendsList");
+    let friends = SESSION.friends || [];
 
-    allUsers[name].friends = allUsers[name].friends || [];
-    allUsers[name].friends.push(user.name);
+    if (friends.length === 0) {
+        list.innerHTML = "<p>Nenhum amigo ainda.</p>";
+        return;
+    }
 
-    updateUser();
-    alert("Agora vocês são amigos!");
-
-    renderFriends();
-    renderRequests();
+    list.innerHTML = friends
+        .map(f => `<p>• ${f}</p>`)
+        .join("");
 }
 
 
-/* ===============================
-   SALVAR USUÁRIO
-================================*/
+/* =======================================================
+   PEDIDOS DE AMIZADE
+======================================================= */
 
-function updateUser() {
-    allUsers[user.name] = user;
+function loadRequests() {
+    let list = document.getElementById("requestsList");
+    let reqs = SESSION.requests || [];
 
-    localStorage.setItem("users", JSON.stringify(allUsers));
-    localStorage.setItem("currentUser", JSON.stringify(user));
+    if (reqs.length === 0) {
+        list.innerHTML = "<p>Nenhum pedido pendente.</p>";
+        return;
+    }
+
+    list.innerHTML = reqs
+        .map(r => `
+            <p>${r} 
+                <button class="btn-main" style="padding:6px 12px;"
+                        onclick="acceptRequest('${r}')">Aceitar</button>
+            </p>
+        `)
+        .join("");
+}
+
+function acceptRequest(user) {
+    SESSION.friends.push(user);
+    SESSION.requests = SESSION.requests.filter(r => r !== user);
+
+    USERS[SESSION.name] = SESSION;
+    USERS[user].friends.push(SESSION.name);
+
+    localStorage.setItem("users", JSON.stringify(USERS));
+    localStorage.setItem("session", JSON.stringify(SESSION));
+
+    loadRequests();
+    loadFriends();
 }
 
 
-/* ===============================
-   INICIAR RENDERIZAÇÃO
-================================*/
+/* =======================================================
+   EXCLUIR CONTA
+======================================================= */
 
-renderFriends();
-renderRequests();
+function deleteAccount() {
+    if (!confirm("Tem certeza que deseja excluir sua conta?")) return;
 
+    delete USERS[SESSION.name];
+    localStorage.setItem("users", JSON.stringify(USERS));
+
+    localStorage.removeItem("session");
+    window.location.href = "auth.html";
+}
 </script>
 
 </body>
