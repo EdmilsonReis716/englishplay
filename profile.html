@@ -1,247 +1,155 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil — EnglishPlay</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="estilo.css">
+
+    <style>
+        .perfil-container {
+            width: 850px;
+            margin: 130px auto;
+            background: #111;
+            border: 3px solid #ffcc00;
+            border-radius: 20px;
+            padding: 25px;
+        }
+
+        .perfil-top {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .perfil-img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 3px solid #ffcc00;
+        }
+
+        .perfil-name {
+            font-size: 30px;
+            font-weight: 700;
+            color: #ffcc00;
+        }
+
+        .perfil-stats {
+            margin-top: 10px;
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .section-title {
+            margin-top: 25px;
+            font-size: 24px;
+            color: #ffcc00;
+            font-weight: 600;
+        }
+
+        .friend-box {
+            background: #1a1a1a;
+            padding: 14px;
+            border-radius: 12px;
+            margin-top: 10px;
+            border: 2px solid #333;
+        }
+
+        .edit-btn {
+            margin-top: 20px;
+            padding: 10px 18px;
+            background: #ffcc00;
+            border-radius: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            color: black;
+        }
+    </style>
 </head>
 <body>
 
 <!-- NAVBAR -->
-<header class="navbar">
-    <div class="nav-logo" onclick="location.href='index.html'">
+<div class="navbar">
+    <div class="nav-left" onclick="location.href='index.html'">
         <img src="logo.png">
-        <span class="nav-title">EnglishPlay</span>
+        <div class="nav-title">EnglishPlay</div>
     </div>
 
-    <input type="text" class="search-box" placeholder="Pesquisar..." disabled>
+    <input type="text" disabled class="search-box" placeholder="Meu perfil">
 
-    <div class="nav-user" onclick="logout()">Sair</div>
-</header>
-
-
-<div class="main" style="justify-content:center; margin-top:130px;">
-    <div class="section-box" style="width:600px;">
-
-        <h2 class="section-title">👤 Meu Perfil</h2>
-
-        <div style="text-align:center; margin-bottom:20px;">
-
-            <!-- FOTO -->
-            <img id="profileImg" src="logo.png" 
-                style="width:160px; height:160px; border-radius:50%; cursor:pointer;"
-                onclick="document.getElementById('imgInput').click()">
-
-            <input id="imgInput" type="file" accept="image/*" style="display:none;" onchange="changeAvatar()">
-
-            <h2 id="pName" style="margin-top:12px;"></h2>
-
-            <!-- Alterar nome -->
-            <input id="newNameInput" placeholder="Novo nome..." 
-                   style="padding:12px; width:75%; border-radius:12px; margin-top:12px; background:#1a1a1a; color:white; border:2px solid #333;">
-            <button class="btn-main" onclick="updateName()" style="margin-top:10px;">Alterar Nome</button>
-
-        </div>
-
-        <hr style="border-color:#444; margin:20px 0;">
-
-        <!-- INFORMACOES -->
-        <h3>⭐ XP Total:</h3>
-        <p id="pXP"></p>
-
-        <h3 style="margin-top:12px;">🔥 Dias consecutivos:</h3>
-        <p id="pStreak"></p>
-
-        <hr style="border-color:#444; margin:20px 0;">
-
-        <!-- AMIGOS -->
-        <h2 class="section-title">🤝 Amigos</h2>
-
-        <div id="friendsList" style="margin-bottom:25px;">
-            Carregando amigos...
-        </div>
-
-        <!-- PEDIDOS DE AMIZADE -->
-        <h2 class="section-title">📨 Pedidos de amizade</h2>
-
-        <div id="requestsList">
-            Carregando pedidos...
-        </div>
-
-        <hr style="border-color:#444; margin:25px 0;">
-
-        <button class="btn-main" onclick="deleteAccount()" style="background:red; color:white;">
-            Excluir Conta
-        </button>
-
-    </div>
+    <button class="btn-yellow" onclick="logout()">Sair</button>
 </div>
 
+<div class="perfil-container">
+
+    <!-- Parte de cima -->
+    <div class="perfil-top">
+        <img id="fotoPerfil" class="perfil-img" src="logo.png">
+
+        <div>
+            <div id="nomePerfil" class="perfil-name">Carregando...</div>
+
+            <div class="perfil-stats">
+                ⭐ XP total: <span id="xpPerfil"></span><br>
+                🔥 Dias seguidos: <span id="streakPerfil"></span><br>
+                🦊 Mascote: <span id="mascotePerfil"></span>
+            </div>
+
+            <div class="edit-btn" onclick="editarPerfil()">Editar Perfil</div>
+        </div>
+    </div>
+
+    <!-- Amigos -->
+    <div class="section-title">👥 Amigos</div>
+    <div id="listaAmigos"></div>
+
+</div>
+
+<script src="storage.js"></script>
+<script src="mascotes.js"></script>
 
 <script>
-/* =======================================================
-   VERIFICAÇÃO DE LOGIN
-======================================================= */
+/* ============================================================
+    CARREGAR PERFIL
+============================================================ */
 
-let SESSION = JSON.parse(localStorage.getItem("session"));
-let USERS = JSON.parse(localStorage.getItem("users"));
+let userName = getLoggedUser();
+if (!userName) location.href = "auth.html";
 
-if (!SESSION) {
-    window.location.href = "auth.html";
+let user = getUserData(userName);
+
+// Atualizar elementos
+document.getElementById("nomePerfil").textContent = user.name;
+document.getElementById("xpPerfil").textContent = user.xp;
+document.getElementById("streakPerfil").textContent = user.streak;
+document.getElementById("mascotePerfil").textContent = user.mascot;
+
+// Gerar lista de amigos
+let amigosDiv = document.getElementById("listaAmigos");
+if (user.friends.length === 0) {
+    amigosDiv.innerHTML = "<p>Nenhum amigo adicionado ainda.</p>";
+} else {
+    user.friends.forEach(a => {
+        let box = document.createElement("div");
+        box.className = "friend-box";
+        box.textContent = a;
+        amigosDiv.appendChild(box);
+    });
 }
 
+/* ============================================================
+    FUNÇÕES
+============================================================ */
 
-/* =======================================================
-   CARREGAR DADOS DO PERFIL
-======================================================= */
-
-function loadProfile() {
-    document.getElementById("profileImg").src = SESSION.avatar || "logo.png";
-    document.getElementById("pName").innerText = SESSION.name;
-    document.getElementById("pXP").innerText = SESSION.xp + " XP";
-    document.getElementById("pStreak").innerText = SESSION.streak + " dias";
-
-    loadFriends();
-    loadRequests();
+function editarPerfil() {
+    alert("Função editar perfil (trocar foto, nome, mascote) será adicionada aqui futuramente.");
 }
 
-document.addEventListener("DOMContentLoaded", loadProfile);
-
-
-/* =======================================================
-   ALTERAR AVATAR
-======================================================= */
-
-function changeAvatar() {
-    let input = document.getElementById("imgInput").files[0];
-    if (!input) return;
-
-    let reader = new FileReader();
-    reader.onload = () => {
-        SESSION.avatar = reader.result;
-        USERS[SESSION.name].avatar = reader.result;
-
-        localStorage.setItem("users", JSON.stringify(USERS));
-        localStorage.setItem("session", JSON.stringify(SESSION));
-
-        loadProfile();
-    };
-
-    reader.readAsDataURL(input);
-}
-
-
-/* =======================================================
-   ALTERAR NOME (máx. 3x)
-======================================================= */
-
-SESSION.nameChanges = SESSION.nameChanges || 0;
-
-function updateName() {
-    let newName = document.getElementById("newNameInput").value.trim();
-
-    if (newName.length < 3) {
-        alert("Nome muito curto!");
-        return;
-    }
-
-    if (USERS[newName]) {
-        alert("Nome já existe!");
-        return;
-    }
-
-    if (SESSION.nameChanges >= 3) {
-        alert("Você já atingiu o limite de mudanças.");
-        return;
-    }
-
-    let oldName = SESSION.name;
-
-    USERS[newName] = USERS[oldName];
-    delete USERS[oldName];
-
-    SESSION.name = newName;
-    SESSION.nameChanges++;
-
-    localStorage.setItem("users", JSON.stringify(USERS));
-    localStorage.setItem("session", JSON.stringify(SESSION));
-
-    loadProfile();
-    alert("Nome alterado com sucesso!");
-}
-
-
-/* =======================================================
-   LISTA DE AMIGOS
-======================================================= */
-
-function loadFriends() {
-    let list = document.getElementById("friendsList");
-    let friends = SESSION.friends || [];
-
-    if (friends.length === 0) {
-        list.innerHTML = "<p>Nenhum amigo ainda.</p>";
-        return;
-    }
-
-    list.innerHTML = friends
-        .map(f => `<p>• ${f}</p>`)
-        .join("");
-}
-
-
-/* =======================================================
-   PEDIDOS DE AMIZADE
-======================================================= */
-
-function loadRequests() {
-    let list = document.getElementById("requestsList");
-    let reqs = SESSION.requests || [];
-
-    if (reqs.length === 0) {
-        list.innerHTML = "<p>Nenhum pedido pendente.</p>";
-        return;
-    }
-
-    list.innerHTML = reqs
-        .map(r => `
-            <p>${r} 
-                <button class="btn-main" style="padding:6px 12px;"
-                        onclick="acceptRequest('${r}')">Aceitar</button>
-            </p>
-        `)
-        .join("");
-}
-
-function acceptRequest(user) {
-    SESSION.friends.push(user);
-    SESSION.requests = SESSION.requests.filter(r => r !== user);
-
-    USERS[SESSION.name] = SESSION;
-    USERS[user].friends.push(SESSION.name);
-
-    localStorage.setItem("users", JSON.stringify(USERS));
-    localStorage.setItem("session", JSON.stringify(SESSION));
-
-    loadRequests();
-    loadFriends();
-}
-
-
-/* =======================================================
-   EXCLUIR CONTA
-======================================================= */
-
-function deleteAccount() {
-    if (!confirm("Tem certeza que deseja excluir sua conta?")) return;
-
-    delete USERS[SESSION.name];
-    localStorage.setItem("users", JSON.stringify(USERS));
-
-    localStorage.removeItem("session");
-    window.location.href = "auth.html";
+function logout() {
+    localStorage.removeItem("englishplay_logged_user");
+    location.href = "auth.html";
 }
 </script>
 
