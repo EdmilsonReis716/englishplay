@@ -1,335 +1,511 @@
-/* EnglishPlay — updated front-end (localStorage)
-   - cleaned accounts (DB starts empty)
-   - removed IA
-   - added friend search bar
-   - lessons redirect to lesson.html?id=N
-   - questionnaire uses options
-   - more filled layout + animations
+/* EnglishPlay — Front-end localStorage
+   - Modais 100% corrigidos (nunca sobrepõem)
+   - Layout alinhado
+   - Pesquisa de amigos
+   - Aulas com redirecionamento
+   - Questionário com opções
+   - Avatar personalizável
+   - Desbloqueio de aulas com modal
 */
 
 (() => {
-  const DB_KEY = 'englishplay_db_user_v2';
-  const SESS_KEY = 'englishplay_session_v2';
+
+  const DB_KEY = "englishplay_db_v3";
+  const SESS_KEY = "englishplay_session_v3";
 
   // DOM
-  const userArea = document.getElementById('userArea');
-  const searchInput = document.getElementById('searchUsers');
-  const searchResults = document.getElementById('searchResults');
-  const lessonsGrid = document.getElementById('lessonsGrid');
-  const sidebar = document.getElementById('sidebar');
-  const authModal = document.getElementById('authModal');
-  const questionModal = document.getElementById('questionModal');
+  const userArea = document.getElementById("userArea");
+  const sidebar = document.getElementById("sidebar");
+  const lessonsGrid = document.getElementById("lessonsGrid");
 
-  // buttons
-  document.getElementById('btnCreate').addEventListener('click', openAuthModal);
-  document.getElementById('btnLogin').addEventListener('click', openAuthModal);
+  const searchInput = document.getElementById("searchUsers");
+  const searchResults = document.getElementById("searchResults");
 
-  const authLoginBtn = document.getElementById('authLoginBtn');
-  const authRegisterBtn = document.getElementById('authRegisterBtn');
+  const overlay = document.getElementById("overlay");
+  const authModal = document.getElementById("authModal");
+  const questionModal = document.getElementById("questionModal");
+  const paymentModal = document.getElementById("paymentModal");
 
-  const finishQuestionBtn = document.getElementById('finishQuestion');
+  const authLoginBtn = document.getElementById("authLoginBtn");
+  const authRegisterBtn = document.getElementById("authRegisterBtn");
 
-  // payment modal controls
-  const paymentModal = document.getElementById('paymentModal');
-  const overlay = document.getElementById('overlay');
+  const finishQuestionBtn = document.getElementById("finishQuestion");
 
-  // init db (empty users)
-  function defaultDB(){
+  let unlockTarget = null;
+
+  // ------------ DATABASE ------------
+
+  function defaultDB() {
     const lessons = {};
-    for(let i=1;i<=200;i++){
-      lessons[i] = { id:i, title:`Aula ${i}`, content:`Conteúdo de exemplo da Aula ${i}` };
+    for (let i = 1; i <= 200; i++) {
+      lessons[i] = {
+        id: i,
+        title: "Aula " + i,
+        content: "Conteúdo de exemplo da aula " + i
+      };
     }
-    return { users: [], lessons, globalMessage: null };
+    return {
+      users: [],
+      lessons
+    };
   }
-  function dbLoad(){ try { return JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB(); } catch { return defaultDB(); } }
-  function dbSave(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
 
-  function sessionGet(){ try { return JSON.parse(localStorage.getItem(SESS_KEY)); } catch { return null; } }
-  function sessionSet(u){ localStorage.setItem(SESS_KEY, JSON.stringify(u)); }
-  function sessionClear(){ localStorage.removeItem(SESS_KEY); }
+  function dbLoad() {
+    try {
+      return JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB();
+    } catch (e) {
+      return defaultDB();
+    }
+  }
+
+  function dbSave(db) {
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+  }
+
+  function getSession() {
+    try {
+      return JSON.parse(localStorage.getItem(SESS_KEY));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function setSession(u) {
+    localStorage.setItem(SESS_KEY, JSON.stringify(u));
+  }
+
+  function clearSession() {
+    localStorage.removeItem(SESS_KEY);
+  }
 
   let db = dbLoad();
-  let session = sessionGet();
+  let session = getSession();
 
-  // render header area (login/profile)
-  function renderHeaderArea(){
-    if(!session){
-      userArea.innerHTML = `<button class="nav-btn" id="openAuthTop">Entrar / Cadastrar</button>`;
-      document.getElementById('openAuthTop').onclick = openAuthModal;
-    } else {
-      userArea.innerHTML = `
-        <span style="margin-right:8px">Olá, <b>${escapeHtml(session.username)}</b> ${session.verified? '✔':''}</span>
-        <button class="nav-btn" id="openProfile">Perfil</button>
-        <button class="nav-btn" id="logoutBtn">Sair</button>
-      `;
-      document.getElementById('openProfile').onclick = renderProfile;
-      document.getElementById('logoutBtn').onclick = () => { sessionClear(); session=null; renderAll(); };
-    }
+  // ---------------- MODAL SYSTEM (CORRIGIDO) ----------------
+
+  function closeAllModals() {
+    authModal.classList.add("hidden");
+    questionModal.classList.add("hidden");
+    paymentModal.classList.add("hidden");
+    overlay.classList.add("hidden");
   }
 
-  // search friends
-  searchInput.addEventListener('input', (e)=>{
-    const q = e.target.value.trim().toLowerCase();
-    if(!q){ searchResults.classList.add('hidden'); searchResults.innerHTML=''; return; }
-    const matches = db.users.filter(u => u.username.toLowerCase().includes(q) || (u.name && u.name.toLowerCase().includes(q)));
-    if(matches.length === 0){
-      searchResults.innerHTML = `<div>Nenhum usuário encontrado</div>`;
-    } else {
-      searchResults.innerHTML = matches.map(u => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:6px">
-          <div><strong>${escapeHtml(u.username)}</strong><div style="font-size:12px;color:#9aa0a6">${escapeHtml(u.name||'')}</div></div>
-          <div>${renderFriendButton(u)}</div>
-        </div>
-      `).join('');
+  function openModal(modal) {
+    closeAllModals();
+    modal.classList.remove("hidden");
+    overlay.classList.remove("hidden");
+  }
+
+  function openAuthModal() {
+    openModal(authModal);
+  }
+
+  function openQuestionnaire() {
+    openModal(questionModal);
+  }
+
+  function openPaymentModal() {
+    openModal(paymentModal);
+  }
+
+  // ---------------- HEADER ----------------
+
+  function renderHeader() {
+    if (!session) {
+      userArea.innerHTML = `
+        <button class="nav-btn" id="topLoginBtn">Entrar</button>
+      `;
+      document.getElementById("topLoginBtn").onclick = openAuthModal;
+      return;
     }
-    searchResults.classList.remove('hidden');
+
+    userArea.innerHTML = `
+      <span style="margin-right:8px">Olá, <b>${escape(session.username)}</b></span>
+      <button class="nav-btn" id="profileBtn">Perfil</button>
+      <button class="nav-btn" id="logoutBtn">Sair</button>
+    `;
+
+    document.getElementById("logoutBtn").onclick = () => {
+      clearSession();
+      session = null;
+      renderAll();
+    };
+  }
+
+  // ---------------- FRIEND SEARCH ----------------
+
+  searchInput.addEventListener("input", e => {
+    const q = e.target.value.trim().toLowerCase();
+    if (!q) {
+      searchResults.classList.add("hidden");
+      searchResults.innerHTML = "";
+      return;
+    }
+
+    const matches = db.users.filter(u =>
+      u.username.toLowerCase().includes(q)
+    );
+
+    searchResults.innerHTML = matches
+      .map(
+        u => `
+      <div class="search-item">
+        <div>
+          <b>${escape(u.username)}</b>
+        </div>
+        <div>
+          ${renderFriendButton(u)}
+        </div>
+      </div>
+    `
+      )
+      .join("");
+
+    searchResults.classList.remove("hidden");
   });
 
-  function renderFriendButton(user){
-    if(!session) return `<button class="btn ghost" onclick="openAuthModal()">Entrar</button>`;
-    if(user.id === session.id) return '<span style="color:#9aa0a6">Você</span>';
-    const isFriend = session.friends && session.friends.includes(user.id);
-    if(isFriend) return `<button class="btn ghost" onclick="messageFriend(${user.id})">Mensagem</button>`;
-    const requested = user.friendRequests && user.friendRequests.includes(session.id);
-    if(requested) return `<button class="btn ghost">Pedido enviado</button>`;
+  function renderFriendButton(user) {
+    if (!session) return `<button class="btn ghost" onclick="openAuthModal()">Entrar</button>`;
+    if (session.id === user.id) return `<span style="color:#888">Você</span>`;
+
+    const isFriend = session.friends?.includes(user.id);
+
+    if (isFriend) {
+      return `<button class="btn ghost">Amigo</button>`;
+    }
+
     return `<button class="btn" onclick="sendFriendRequest(${user.id})">Adicionar</button>`;
   }
 
-  window.sendFriendRequest = function(targetId){
-    if(!session) return openAuthModal();
-    const target = db.users.find(u => u.id === targetId);
-    if(!target) return alert('Usuário não encontrado.');
-    target.friendRequests = target.friendRequests || [];
-    if(target.friendRequests.includes(session.id)) return alert('Pedido já enviado.');
-    target.friendRequests.push(session.id);
+  window.sendFriendRequest = function (id) {
+    if (!session) return openAuthModal();
+
+    const user = db.users.find(u => u.id === id);
+    if (!user) return;
+
+    session.friends = session.friends || [];
+    user.friends = user.friends || [];
+
+    if (!session.friends.includes(id)) session.friends.push(id);
+    if (!user.friends.includes(session.id)) user.friends.push(session.id);
+
     dbSave(db);
-    alert('Pedido enviado (local).');
+    setSession(session);
     renderAll();
   };
 
-  window.messageFriend = function(id){
-    alert('Mensagem local: função de chat real não implementada (demo).');
-  };
+  // ---------------- REGISTER / LOGIN ----------------
 
-  // open auth modal
-  function openAuthModal(){
-    authModal.classList.remove('hidden');
-    overlay.classList.remove('hidden');
-  }
-  function closeAuthModal(){ authModal.classList.add('hidden'); overlay.classList.add('hidden'); }
+  authLoginBtn.addEventListener("click", () => {
+    const u = document.getElementById("authUser").value.trim();
+    const p = document.getElementById("authPass").value.trim();
 
-  // hook auth actions
-  authLoginBtn && authLoginBtn.addEventListener('click', ()=>{
-    const user = document.getElementById('authUser').value.trim();
-    const pass = document.getElementById('authPass').value;
-    if(!user || !pass) return alert('Preencha ambos');
-    const u = db.users.find(x => (x.username===user || x.email===user) && x.password === pass);
-    if(!u) return alert('Usuário ou senha incorretos');
-    if(u.banned) return alert('Conta banida');
-    session = u;
-    sessionSet(session);
-    closeAuthModal();
+    if (!u || !p) return alert("Preencha tudo.");
+
+    const user = db.users.find(x => x.username === u && x.password === p);
+    if (!user) return alert("Usuário ou senha incorretos.");
+
+    session = user;
+    setSession(user);
+    closeAllModals();
     renderAll();
   });
 
-  authRegisterBtn && authRegisterBtn.addEventListener('click', ()=>{
-    const user = document.getElementById('authUser').value.trim();
-    const pass = document.getElementById('authPass').value;
-    if(!user || !pass) return alert('Preencha ambos');
-    if(db.users.some(u => u.username === user)) return alert('Nome de usuário já existe');
-    const newUser = { id: Date.now(), username:user, name:'', password:pass, verified:false, isAdmin:false, banned:false, unlockedLessons:5, friends:[], friendRequests:[], bestFriendId:null, points:0, streak:0, avatar:null };
-    db.users.push(newUser); dbSave(db);
-    session = newUser; sessionSet(session);
-    closeAuthModal();
-    // show questionnaire modal
-    document.getElementById('questionModal').classList.remove('hidden');
-    overlay.classList.remove('hidden');
-  });
+  authRegisterBtn.addEventListener("click", () => {
+    const u = document.getElementById("authUser").value.trim();
+    const p = document.getElementById("authPass").value.trim();
 
-  // finish questionnaire
-  finishQuestionBtn && finishQuestionBtn.addEventListener('click', ()=>{
-    if(!session) return;
-    const q = document.getElementById('q_source').value;
-    const days = document.getElementById('q_days').value;
-    const reason = document.getElementById('q_reason').value;
-    const level = Array.from(document.getElementsByName('q_level')).find(x=>x.checked).value;
-    session.questionnaire = { source:q, days, reason, level };
-    const idx = db.users.findIndex(u=>u.id===session.id);
-    if(idx>=0) db.users[idx] = session;
+    if (!u || !p) return alert("Preencha tudo.");
+    if (db.users.some(x => x.username === u)) return alert("Nome já existe.");
+
+    const newUser = {
+      id: Date.now(),
+      username: u,
+      password: p,
+      avatar: null,
+      unlocked: 5,
+      completed: [],
+      friends: []
+    };
+
+    db.users.push(newUser);
     dbSave(db);
-    document.getElementById('questionModal').classList.add('hidden');
-    overlay.classList.add('hidden');
+
+    session = newUser;
+    setSession(newUser);
+
+    openQuestionnaire();
+  });
+
+  // ---------------- QUESTIONÁRIO ----------------
+
+  finishQuestionBtn.addEventListener("click", () => {
+    session.questionnaire = {
+      source: document.getElementById("q_source").value,
+      days: document.getElementById("q_days").value,
+      reason: document.getElementById("q_reason").value,
+      level: document.querySelector("input[name='q_level']:checked").value
+    };
+
+    dbSave(db);
+    closeAllModals();
     renderAll();
   });
 
-  // render lessons grid
-  function renderLessons(filter='all'){
-    const container = document.getElementById('lessonsGrid');
-    container.innerHTML = '';
-    for(let i=1;i<=200;i++){
+  // ---------------- LESSON GRID ----------------
+
+  function renderLessons(filter = "all") {
+    lessonsGrid.innerHTML = "";
+
+    for (let i = 1; i <= 200; i++) {
       const lesson = db.lessons[i];
-      const unlocked = session ? (session.unlockedLessons >= i) : (i<=5);
-      const done = session && session.completed && session.completed.includes(i);
-      if(filter==='locked' && unlocked) continue;
-      if(filter==='done' && !done) continue;
-      const card = document.createElement('div');
-      card.className = 'lesson-card' + (done? ' done':'') + (unlocked? '' : ' locked');
-      card.innerHTML = `<div class="lesson-num">${unlocked? i : '🔒'}</div><div class="lesson-title">${escapeHtml(lesson.title)}</div>`;
-      card.onclick = () => {
-        if(!unlocked){
-          // open payment modal
-          openPayment(i);
+      const unlocked = session ? session.unlocked >= i : i <= 5;
+      const done = session?.completed?.includes(i);
+
+      if (filter === "locked" && unlocked) continue;
+      if (filter === "done" && !done) continue;
+
+      const div = document.createElement("div");
+      div.className = "lesson-card" + (!unlocked ? " locked" : "") + (done ? " done" : "");
+
+      div.innerHTML = `
+        <div class="lesson-num">${unlocked ? i : "🔒"}</div>
+        <div>${escape(lesson.title)}</div>
+      `;
+
+      div.onclick = () => {
+        if (!unlocked) {
+          unlockTarget = i;
+          openPaymentModal();
           return;
         }
-        // redirect to lesson page
-        location.href = `lesson.html?id=${i}`;
+        location.href = "lesson.html?id=" + i;
       };
-      container.appendChild(card);
+
+      lessonsGrid.appendChild(div);
     }
   }
 
-  // payment simulation
-  let unlockTarget = null;
-  function openPayment(i){
-    unlockTarget = i;
-    paymentModal.classList.remove('hidden');
-    overlay.classList.remove('hidden');
-  }
-  function closePayment(){
-    unlockTarget = null;
-    paymentModal.classList.add('hidden');
-    overlay.classList.add('hidden');
-  }
-  document.getElementById('simulatePayBtn').addEventListener('click', ()=>{
-    if(!session) return alert('Faça login para desbloquear.');
-    if(!unlockTarget) return;
-    session.unlockedLessons = Math.max(session.unlockedLessons, unlockTarget);
-    const idx = db.users.findIndex(u=>u.id===session.id);
-    if(idx>=0) db.users[idx] = session;
-    dbSave(db);
-    closePayment();
-    renderAll();
-    showConfetti();
+  document.getElementById("viewFilter").addEventListener("change", e => {
+    renderLessons(e.target.value);
   });
-  document.getElementById('closePayBtn').addEventListener('click', closePayment);
 
-  // render sidebar (profile / progress)
-  function renderSidebar(){
-    sidebar.innerHTML = '';
-    if(!session){
-      sidebar.innerHTML = `<div class="card"><h3>Bem-vindo</h3><p>Crie conta para salvar progresso.</p></div>`;
+  // ---------------- PAGAMENTO SIMULADO ----------------
+
+  document.getElementById("simulatePayBtn").onclick = () => {
+    if (!session) return alert("Faça login antes.");
+
+    session.unlocked = Math.max(session.unlocked, unlockTarget);
+    dbSave(db);
+    setSession(session);
+
+    unlockTarget = null;
+    closeAllModals();
+    renderAll();
+  };
+
+  document.getElementById("closePayBtn").onclick = () => {
+    unlockTarget = null;
+    closeAllModals();
+  };
+
+  // ---------------- SIDEBAR ----------------
+
+  function renderSidebar() {
+    if (!session) {
+      sidebar.innerHTML = `
+        <div class="card">
+          <h3>Bem-vindo!</h3>
+          <p>Crie uma conta para salvar seu progresso.</p>
+        </div>
+      `;
       return;
     }
-    const completed = (session.completed || []).length;
-    const unlocked = session.unlockedLessons || 5;
+
     sidebar.innerHTML = `
       <div class="card">
-        <img src="${session.avatar || 'logo.png'}" class="profile-avatar" id="sidebarAvatar" />
-        <h3>${escapeHtml(session.username)} ${session.verified? '✔':''}</h3>
-        <p>Pontos: ${session.points || 0}</p>
-        <p>Consecutivos: ${session.streak || 0}</p>
-        <p>Destravadas: ${unlocked}</p>
-        <p>Concluídas: ${completed}</p>
-        <div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
-          <button class="btn" id="editAvatar">Trocar foto</button>
-          <button class="btn ghost" id="viewFriends">Amigos</button>
-        </div>
+        <img src="${session.avatar || "logo.png"}" class="profile-avatar" />
+        <h3>${escape(session.username)}</h3>
+        <p>Aulas liberadas: ${session.unlocked}</p>
+        <p>Concluídas: ${session.completed.length}</p>
+        <button class="btn" id="changeAvatarBtn">Trocar foto</button>
       </div>
     `;
-    document.getElementById('editAvatar').addEventListener('click', ()=> avatarUpload());
-    document.getElementById('viewFriends').addEventListener('click', renderFriends);
+
+    document.getElementById("changeAvatarBtn").onclick = changeAvatar;
   }
 
-  // avatar upload (DataURL)
-  function avatarUpload(){
-    const input = document.createElement('input');
-    input.type='file'; input.accept='image/*';
-    input.onchange = e => {
+  function changeAvatar() {
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "image/*";
+    inp.onchange = e => {
       const f = e.target.files[0];
-      if(!f) return;
+      if (!f) return;
+
       const r = new FileReader();
       r.onload = () => {
         session.avatar = r.result;
-        const idx = db.users.findIndex(u=>u.id===session.id);
-        if(idx>=0) db.users[idx] = session;
         dbSave(db);
-        renderSidebar();
-        renderHeaderArea();
+        setSession(session);
+        renderAll();
       };
       r.readAsDataURL(f);
     };
-    input.click();
+    inp.click();
   }
 
-  function renderFriends(){
-    if(!session) return openAuthModal();
-    const friendsList = (session.friends || []).map(id => {
-      const u = db.users.find(x=>x.id===id);
-      return `<div style="display:flex;justify-content:space-between;padding:6px 8px">${escapeHtml(u.username)} <button class="btn ghost" onclick="removeFriend(${u.id})">Remover</button></div>`;
-    }).join('') || '<div>Nenhum amigo</div>';
-    sidebar.innerHTML = `<div class="card"><h3>Amigos</h3>${friendsList}<div style="margin-top:8px"><button class="btn" onclick="renderHomeInline()">Voltar</button></div></div>`;
-  }
-  window.removeFriend = function(id){
-    session.friends = (session.friends||[]).filter(x=>x!==id);
-    const idx = db.users.findIndex(u=>u.id===session.id);
-    if(idx>=0) db.users[idx] = session;
-    dbSave(db); renderSidebar();
-  };
+  // ---------------- HELPERS ----------------
 
-  // render profile quick
-  function renderProfile(){
-    if(!session) return openAuthModal();
-    const best = session.bestFriendId ? (db.users.find(u=>u.id===session.bestFriendId)?.username || '-') : '-';
-    main.innerHTML = `<div class="card"><h2>Perfil</h2><img src="${session.avatar||'logo.png'}" class="profile-avatar"/><p>Usuário: ${escapeHtml(session.username)}</p><p>Melhor amigo: ${escapeHtml(best)}</p><div style="margin-top:10px"><button class="btn" onclick="renderAll()">Voltar</button></div></div>`;
+  function escape(s) {
+    return String(s).replace(/[&<>"]/g, c => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;"
+    }[c]));
   }
 
-  window.renderHomeInline = function(){ renderAll(); };
+  // ---------------- RENDER ALL ----------------
 
-  // small helpers
-  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-  // confetti
-  function showConfetti(){
-    for(let i=0;i<20;i++){
-      const el = document.createElement('div');
-      el.style.position='fixed'; el.style.left = (10 + Math.random()*80) + '%';
-      el.style.top = '0px'; el.style.width='8px'; el.style.height='12px';
-      el.style.background = ['#ffd54a','#f5c518','#00ff80'][Math.floor(Math.random()*3)];
-      el.style.zIndex = 9999; document.body.appendChild(el);
-      setTimeout(()=>{ el.style.transition='1.2s'; el.style.transform = `translateY(${window.innerHeight}px)`; el.style.opacity=0; setTimeout(()=>el.remove(),1200); },20);
-    }
-  }
-
-  // open/close modals - generic (overlay)
-  function openAuthModal(){ authModal.classList.remove('hidden'); overlay.classList.remove('hidden'); }
-  function closeAuthModal(){ authModal.classList.add('hidden'); overlay.classList.add('hidden'); }
-
-  // render all main UI
-  function renderAll(){
+  function renderAll() {
     db = dbLoad();
-    renderHeaderArea();
+    session = getSession();
+    renderHeader();
     renderSidebar();
-    renderLessons(document.getElementById('viewFilter') ? document.getElementById('viewFilter').value : 'all');
+    renderLessons();
   }
 
-  // view filter change
-  document.getElementById('viewFilter').addEventListener('change', (e)=> renderLessons(e.target.value));
+  // ---------------- INIT ----------------
 
-  // initial boot: ensure db exists
-  (function boot(){
-    if(!db || !db.lessons) db = defaultDB();
-    // NOTE: db.users is empty by design (you asked to remove default accounts)
-    // but keep an admin helper available if you create 'Administrador.EnglishPlay' manually
-    dbSave(db);
-    renderAll();
-  })();
+  document.getElementById("btnCreate").onclick = openAuthModal;
+  document.getElementById("btnLogin").onclick = openAuthModal;
 
-  // public actions for onclick strings
-  window.openAuthModal = openAuthModal;
-  window.renderAll = renderAll;
-  window.renderProfile = renderProfile;
-  window.openPayment = openPayment;
-  window.sendFriendRequest = sendFriendRequest;
+  renderAll();
 
-  // redirect helper: the click handles redirect to lesson.html?id=N
 })();
+// ==================================================
+// ===============  LESSON PAGE HANDLER  ============
+// ==================================================
+
+if (location.pathname.includes("lesson.html")) {
+  document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(location.search);
+    const id = Number(params.get("id"));
+
+    const titleEl = document.getElementById("lessonTitle");
+    const contentEl = document.getElementById("lessonContent");
+    const finishBtn = document.getElementById("finishLesson");
+
+    let db = dbLoad();
+    let session = getSession();
+
+    if (!id || !db.lessons[id]) {
+      titleEl.textContent = "Aula não encontrada";
+      return;
+    }
+
+    titleEl.textContent = db.lessons[id].title;
+    contentEl.textContent = db.lessons[id].content;
+
+    // concluir aula
+    finishBtn.onclick = () => {
+      if (!session) {
+        alert("Você precisa fazer login!");
+        return;
+      }
+
+      session.completed = session.completed || [];
+      if (!session.completed.includes(id)) {
+        session.completed.push(id);
+      }
+
+      dbSave(db);
+      setSession(session);
+
+      // animação de confete ao finalizar
+      fireConfetti();
+
+      setTimeout(() => {
+        location.href = "index.html";
+      }, 1500);
+    };
+  });
+}
+
+// ==================================================
+// ===============  CONFETTI EFFECT  =================
+// ==================================================
+
+function fireConfetti() {
+  const body = document.body;
+  const conf = document.createElement("div");
+  conf.className = "confetti-container";
+
+  for (let i = 0; i < 35; i++) {
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.left = Math.random() * 100 + "%";
+    piece.style.animationDelay = Math.random() * 0.5 + "s";
+    conf.appendChild(piece);
+  }
+
+  body.appendChild(conf);
+
+  setTimeout(() => {
+    conf.remove();
+  }, 2000);
+}
+
+// ==================================================
+// ===============  FIRE ANIMATION  ==================
+// ==================================================
+
+function renderFire() {
+  const f = document.getElementById("fireIcon");
+
+  if (!
+// ==================================================
+// ===============  UI / ANIMAÇÕES  =================
+// ==================================================
+
+// animação suave nos botões
+document.addEventListener("mouseover", e => {
+  if (e.target.classList.contains("btn")) {
+    e.target.style.transform = "scale(1.06)";
+  }
+});
+document.addEventListener("mouseout", e => {
+  if (e.target.classList.contains("btn")) {
+    e.target.style.transform = "scale(1)";
+  }
+});
+
+// expandir / recolher sidebar (mobile)
+const menuToggle = document.getElementById("toggleMenu");
+if (menuToggle) {
+  menuToggle.onclick = () => {
+    sidebar.classList.toggle("open");
+  };
+}
+
+// ==================================================
+// ===============  CLOSE MODALS =====================
+// ==================================================
+
+overlay.onclick = () => {
+  closeAllModals();
+};
+
+document.querySelectorAll(".closeModal").forEach(btn => {
+  btn.onclick = closeAllModals;
+});
+
+// ==================================================
+// ===============  FINAL INIT CHECK =================
+// ==================================================
+
+renderFire(); // animação inicial
+
+console.log("%cEnglishPlay carregado com sucesso!", "color: yellow; font-size:16px");
+
