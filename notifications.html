@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Notificações — EnglishPlay</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="nav-logo" onclick="location.href='index.html'"><img src="logo.png"><span class="nav-title">EnglishPlay</span></div>
+  <input class="search-box" placeholder="Pesquisar..." disabled>
+  <div class="nav-user" onclick="logout()">Sair</div>
+</header>
+
+<div class="main" style="margin-top:130px; justify-content:center;">
+  <div class="section-box" style="width:760px;">
+    <h2 class="section-title">🔔 Notificações</h2>
+
+    <div id="notificationsList">Carregando notificações...</div>
+
+  </div>
+</div>
+
+<script>
+const USERS = JSON.parse(localStorage.getItem("users")) || {};
+let SESSION = JSON.parse(localStorage.getItem("session")) || null;
+if(!SESSION) location.href='auth.html';
+
+function getNotifications(){
+  // Simples sistema local: notificações gravadas no objeto session.notifications
+  const notifications = SESSION.notifications || [];
+  return notifications;
+}
+
+function render(){
+  const list = document.getElementById("notificationsList");
+  const nots = getNotifications();
+  if(!nots.length) { list.innerHTML = "<p>Sem notificações.</p>"; return; }
+  list.innerHTML = nots.map(n => `<div style="padding:10px;border-bottom:1px solid #222">${n}</div>`).join("");
+}
+
+document.addEventListener("DOMContentLoaded", render);
+</script>
+
+</body>
+</html>
