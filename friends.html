@@ -1,97 +1,178 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Amigos — EnglishPlay</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amigos — EnglishPlay</title>
+
+    <link rel="stylesheet" href="estilo.css">
+
+    <style>
+        .friends-container {
+            width: 750px;
+            margin: 140px auto;
+            background: #111;
+            border: 3px solid #ffcc00;
+            border-radius: 20px;
+            padding: 25px;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffcc00;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .search-input-2 {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 22px;
+        }
+
+        .user-box {
+            background: #1a1a1a;
+            padding: 14px;
+            border-radius: 12px;
+            border: 2px solid #333;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .add-btn {
+            background: #ffcc00;
+            padding: 8px 14px;
+            color: black;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .friend-item {
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            border: 2px solid #333;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
 
-<header class="navbar">
-  <div class="nav-logo" onclick="location.href='index.html'">
-    <img src="logo.png"><span class="nav-title">EnglishPlay</span>
-  </div>
-  <input class="search-box" placeholder="Pesquisar..." disabled>
-  <div class="nav-user" onclick="logout()">Sair</div>
-</header>
-
-<div class="main" style="margin-top:130px; justify-content:center;">
-  <div class="section-box" style="width:760px;">
-    <h2 class="section-title">🤝 Amigos</h2>
-
-    <div style="display:flex;gap:12px;margin-bottom:12px;">
-      <input id="friendSearchInput" placeholder="Pesquisar usuário para adicionar..." style="flex:1;padding:10px;border-radius:10px;background:#121212;border:2px solid #222;color:white;">
-      <button class="btn-main" onclick="sendFriend()">Enviar pedido</button>
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="nav-left" onclick="location.href='index.html'">
+        <img src="logo.png">
+        <div class="nav-title">EnglishPlay</div>
     </div>
 
-    <div style="display:flex; gap:20px;">
-      <div style="flex:1">
-        <h3>Seus amigos</h3>
-        <div id="friendsList">Carregando...</div>
-      </div>
-      <div style="flex:1">
-        <h3>Pedidos recebidos</h3>
-        <div id="requestsList">Carregando...</div>
-      </div>
-    </div>
+    <input type="text" disabled class="search-box" placeholder="Amigos">
 
-  </div>
+    <button class="btn-yellow" onclick="logout()">Sair</button>
 </div>
 
+<div class="friends-container">
+    <div class="title">👥 Procurar Amigos</div>
+
+    <input type="text" id="buscar" class="search-input-2" placeholder="Digite o nome do usuário..." oninput="buscarUsuarios()">
+
+    <div id="resultados"></div>
+
+    <div class="title">Meus Amigos</div>
+
+    <div id="listaAmigos"></div>
+</div>
+
+<script src="storage.js"></script>
+<script src="mascotes.js"></script>
+
 <script>
-const DB = JSON.parse(localStorage.getItem("users")) || {};
-let SESSION = JSON.parse(localStorage.getItem("session")) || null;
-if(!SESSION){ location.href='auth.html'; }
+/* ============================================================
+   INICIAR PÁGINA
+============================================================ */
 
-function renderFriends() {
-  const fl = document.getElementById("friendsList");
-  const friends = SESSION.friends || [];
-  if(!friends.length){ fl.innerHTML = "<p>Nenhum amigo ainda.</p>"; return; }
-  fl.innerHTML = friends.map(f=>`<div style="padding:8px;border-bottom:1px solid #222">${f}</div>`).join("");
+let meuNome = getLoggedUser();
+if (!meuNome) location.href = "auth.html";
+
+let users = loadUsers();
+let meuUser = users[meuNome];
+
+let resultados = document.getElementById("resultados");
+let amigosDiv = document.getElementById("listaAmigos");
+
+/* ============================================================
+   GERAR LISTA DE AMIGOS
+============================================================ */
+
+function carregarAmigos() {
+    amigosDiv.innerHTML = "";
+
+    if (meuUser.friends.length === 0) {
+        amigosDiv.innerHTML = "<p>Nenhum amigo ainda.</p>";
+        return;
+    }
+
+    meuUser.friends.forEach(a => {
+        let item = document.createElement("div");
+        item.className = "friend-item";
+        item.textContent = a;
+        amigosDiv.appendChild(item);
+    });
 }
 
-function renderRequests(){
-  const rl = document.getElementById("requestsList");
-  const reqs = SESSION.requests || [];
-  if(!reqs.length){ rl.innerHTML="<p>Sem pedidos.</p>"; return; }
-  rl.innerHTML = reqs.map(r=>`
-    <div style="padding:8px;border-bottom:1px solid #222">
-      ${r} <button class="btn-main" style="margin-left:8px;" onclick="accept('${r}')">Aceitar</button>
-    </div>
-  `).join("");
+carregarAmigos();
+
+/* ============================================================
+   BUSCAR USUÁRIOS
+============================================================ */
+
+function buscarUsuarios() {
+    let termo = document.getElementById("buscar").value.toLowerCase();
+    resultados.innerHTML = "";
+
+    if (termo.length < 1) return;
+
+    Object.keys(users).forEach(u => {
+        if (u.toLowerCase().includes(termo) && u !== meuNome) {
+            let div = document.createElement("div");
+            div.className = "user-box";
+
+            div.innerHTML = `
+                <span>${u}</span>
+                <button class="add-btn" onclick="adicionar('${u}')">Adicionar</button>
+            `;
+
+            resultados.appendChild(div);
+        }
+    });
 }
 
-function sendFriend(){
-  const name = document.getElementById("friendSearchInput").value.trim();
-  if(!name) return alert("Digite um nome.");
-  if(!DB[name]) return alert("Usuário não encontrado.");
-  if((SESSION.requests||[]).includes(name)) return alert("Já há pedido pendente.");
-  if((SESSION.friends||[]).includes(name)) return alert("Já é seu amigo.");
+/* ============================================================
+   ADICIONAR AMIGO
+============================================================ */
 
-  DB[name].requests = DB[name].requests || [];
-  DB[name].requests.push(SESSION.name);
-  localStorage.setItem("users", JSON.stringify(DB));
-  alert("Pedido enviado!");
+function adicionar(nome) {
+    let res = addFriend(nome);
+
+    if (res.ok) {
+        mascoteFala("Amigo adicionado!");
+        meuUser = loadUsers()[meuNome]; 
+        carregarAmigos();
+    } else {
+        mascoteFala(res.message);
+    }
 }
 
-function accept(name){
-  // adicionar amizade bilateral
-  SESSION.requests = SESSION.requests.filter(r=>r!==name);
-  SESSION.friends = SESSION.friends || [];
-  SESSION.friends.push(name);
-
-  DB[SESSION.name] = SESSION;
-  DB[name].friends = DB[name].friends || [];
-  DB[name].friends.push(SESSION.name);
-
-  localStorage.setItem("users", JSON.stringify(DB));
-  localStorage.setItem("session", JSON.stringify(SESSION));
-  renderFriends(); renderRequests();
-  alert("Amizade aceita!");
+function logout() {
+    localStorage.removeItem("englishplay_logged_user");
+    location.href = "auth.html";
 }
-
-document.addEventListener("DOMContentLoaded", ()=>{ renderFriends(); renderRequests(); });
 </script>
 
 </body>
