@@ -1,52 +1,256 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EnglishPlay — Seu portal de estudos</title>
+    <title>EnglishPlay — Início</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="estilo.css">
+
+    <style>
+        /* Correções extras para navbar dentro desta página */
+
+        .navbar {
+            width: 100%;
+            height: 70px;
+            background: #000;
+            border-bottom: 3px solid #ffcc00;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            position: fixed;
+            top: 0;
+            z-index: 999;
+        }
+
+        .navbar .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .navbar img {
+            width: 55px;
+            border-radius: 50%;
+        }
+
+        .navbar-title {
+            font-size: 25px;
+            color: #ffcc00;
+            font-weight: bold;
+        }
+
+        .search-input {
+            width: 350px;
+            padding: 8px 16px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 18px;
+            color: white;
+        }
+
+        .logout-btn {
+            background: #ffcc00;
+            padding: 10px 22px;
+            border-radius: 20px;
+            font-weight: 700;
+            color: black;
+            cursor: pointer;
+        }
+
+        /* Layout geral */
+        .container {
+            margin-top: 110px;
+            padding: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+        }
+
+        /* Perfil lateral */
+        .profile-card {
+            width: 260px;
+            background: #111;
+            border: 3px solid #ffcc00;
+            border-radius: 20px;
+            text-align: center;
+            padding: 20px;
+            height: fit-content;
+        }
+
+        .profile-card img {
+            width: 130px;
+            border-radius: 50%;
+        }
+
+        .profile-card h3 {
+            margin-top: 10px;
+            font-size: 19px;
+        }
+
+        .profile-data {
+            margin-top: 8px;
+            opacity: 0.9;
+        }
+
+        .profile-btn {
+            margin-top: 18px;
+            background: #ffcc00;
+            padding: 10px;
+            border-radius: 20px;
+            color: black;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Sessões */
+        .session-box {
+            width: 880px;
+            background: #101010;
+            padding: 25px;
+            border: 3px solid #ffcc00;
+            border-radius: 20px;
+            margin-bottom: 40px;
+        }
+
+        .session-title {
+            color: #ffcc00;
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .lesson-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 25px;
+        }
+
+        /* Círculos de lições */
+        .lesson {
+            width: 110px;
+            height: 110px;
+            background: #1a1a1a;
+            border-radius: 50%;
+            border: 3px solid #444;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            cursor: pointer;
+            transition: .25s;
+            font-size: 25px;
+            font-weight: 700;
+        }
+
+        .lesson:hover {
+            transform: scale(1.1);
+            border-color: #ffcc00;
+        }
+
+        .lesson.locked {
+            cursor: not-allowed;
+            opacity: 0.4;
+        }
+    </style>
 </head>
+
 <body>
 
     <!-- NAVBAR -->
-    <header class="navbar">
-        <div class="nav-logo" onclick="location.href='index.html'">
+    <div class="navbar">
+        <div class="logo-area">
             <img src="logo.png" alt="logo">
-            <span class="nav-title">EnglishPlay</span>
+            <div class="navbar-title">EnglishPlay</div>
         </div>
 
-        <input type="text" class="search-box" id="searchUsers" placeholder="Pesquisar usuários..." oninput="searchUsers()">
+        <input type="text" class="search-input" placeholder="Pesquisar usuários...">
 
-        <div class="nav-user" onclick="logout()">Sair</div>
-    </header>
-
-    <!-- CONTEÚDO PRINCIPAL -->
-    <div class="main">
-
-        <!-- PERFIL LATERAL -->
-        <aside class="profile-card">
-            <img id="profilePic" src="logo.png">
-            <h3 id="profileName">Carregando...</h3>
-
-            <p><span id="fire">🔥 0 dias</span></p>
-            <p><span id="xp">⭐ 0 XP</span></p>
-
-            <button class="profile-btn" onclick="location.href='perfil.html'">Perfil</button>
-        </aside>
-
-        <!-- SESSÕES DE AULAS -->
-        <section style="margin-left: 40px;">
-
-            <!-- Sessões serão inseridas dinamicamente -->
-            <div id="sessionsContainer"></div>
-
-        </section>
+        <div class="logout-btn" onclick="logout()">Sair</div>
     </div>
 
-    <!-- MODAL LOGIN/CADASTRO/QUESTIONÁRIO É ADICIONADO PELO SCRIPT -->
-    <div id="modalArea"></div>
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="container">
 
+        <!-- PERFIL LATERAL -->
+        <div class="profile-card">
+            <img id="perfilFoto" src="logo.png">
+            <h3 id="perfilNome">Usuário</h3>
+
+            <div class="profile-data">
+                🔥 <span id="perfilDias">0</span> dias<br>
+                ⭐ <span id="perfilXP">0</span> XP
+            </div>
+
+            <div class="profile-btn" onclick="irPerfil()">Perfil</div>
+        </div>
+
+        <!-- ÁREA DAS SESSÕES -->
+        <div id="sessionsArea"></div>
+
+    </div>
+
+<script src="storage.js"></script>
+<script src="lições.js"></script>
 <script src="script.js"></script>
+
+<script>
+    // Redireciona se não estiver logado
+    const user = getLoggedUser();
+    if (!user) window.location.href = "auth.html";
+
+    document.getElementById("perfilNome").textContent = user.name;
+    document.getElementById("perfilXP").textContent = user.xp;
+    document.getElementById("perfilDias").textContent = user.streak;
+
+    function irPerfil() {
+        window.location.href = "perfil.html";
+    }
+
+    function logout() {
+        logoutUser();
+        window.location.href = "auth.html";
+    }
+
+    /* ---------------------- Gerar Sessões e Lições ----------------------- */
+
+    const sessionsArea = document.getElementById("sessionsArea");
+
+    SESSOES.forEach((sessao, indexSessao) => {
+        let box = document.createElement("div");
+        box.className = "session-box";
+
+        box.innerHTML = `
+            <div class="session-title">📘 ${sessao.nome}</div>
+            <div class="lesson-grid" id="sessao${indexSessao}"></div>
+        `;
+
+        sessionsArea.appendChild(box);
+
+        const grid = document.getElementById(`sessao${indexSessao}`);
+
+        sessao.licoes.forEach((licao, indexLicao) => {
+            let unlocked = indexLicao === 0 || user.progress.includes(licao.id);
+
+            let div = document.createElement("div");
+            div.className = "lesson" + (unlocked ? "" : " locked");
+
+            div.textContent = indexLicao + 1;
+
+            if (unlocked) {
+                div.onclick = () => {
+                    localStorage.setItem("lessonOpen", licao.id);
+                    window.location.href = "lição.html";
+                };
+            }
+
+            grid.appendChild(div);
+        });
+    });
+</script>
+
 </body>
 </html>
