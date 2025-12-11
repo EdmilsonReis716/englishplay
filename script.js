@@ -1,234 +1,306 @@
-/* script.js — EnglishPlay (all-in-one front-end engine) */
+/* ============================================
+   SISTEMA GLOBAL – LOCALSTORAGE MANAGER
+=============================================== */
 
-/* ---------- Helpers ---------- */
-const $ = id => document.getElementById(id);
-const now = () => Date.now();
+const LS = {
+    save(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+    },
+    load(key, def = null) {
+        const v = localStorage.getItem(key);
+        return v ? JSON.parse(v) : def;
+    }
+};
 
-function dbLoad(){ try{ return JSON.parse(localStorage.getItem('englishplay_db')) || { users: [] }; } catch(e){ return { users: [] }; } }
-function dbSave(db){ localStorage.setItem('englishplay_db', JSON.stringify(db)); }
-function sessionLoad(){ try{ return JSON.parse(localStorage.getItem('englishplay_session')); } catch(e){ return null; } }
-function sessionSave(s){ localStorage.setItem('englishplay_session', JSON.stringify(s)); }
 
-/* ---------- App state ---------- */
-let DB = dbLoad();
-let session = sessionLoad();
+/* ============================================
+   USUÁRIO ATUAL
+=============================================== */
 
-/* ---------- UI references ---------- */
-const authModal = $('authModal');
-const overlay = $('overlay');
-const navRight = $('navRight');
-const sidebar = $('sidebar');
-const sessionsArea = $('sessionsArea');
-const searchUsers = $('searchUsers');
-const searchResults = $('searchResults');
-const pixModal = $('pixModal');
-const pixKeyEl = $('pixKey');
+let currentUser = LS.load("currentUser", null);
+let users = LS.load("users", {});
 
-/* ---------- Helpers UI ---------- */
-function openModal(el){ overlay.classList.remove('hidden'); el.classList.remove('hidden'); }
-function closeAll(){ document.querySelectorAll('.modal').forEach(m=>m.classList.add('hidden')); overlay.classList.add('hidden'); }
-function toast(msg){ alert(msg); } // simple for now
 
-/* ---------- Render nav / sidebar ---------- */
-function renderNav(){
-  const right = $('navRight');
-  if(!session){
-    right.innerHTML = `<button id="openAuthBtn" class="btn ghost">Entrar / Criar</button>`;
-    $('openAuthBtn').onclick = ()=> openModal(authModal);
-  } else {
-    right.innerHTML = `<button id="profileBtn" class="btn ghost">${session.username}</button>`;
-    $('profileBtn').onclick = ()=> window.location.href='profile.html';
-  }
+/* ============================================
+   MOSTRAR / ESCONDER TELAS
+=============================================== */
+
+function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.style.display = "none");
+    document.getElementById(id).style.display = "block";
 }
 
-function renderSidebar(){
-  sidebar.innerHTML = '';
-  const box = document.createElement('div');
-  box.className='card';
-  box.style.padding='12px';
-  const avatar = session ? session.avatar || 'logo.png' : 'logo.png';
-  box.innerHTML = `
-    <img src="${avatar}" class="profile-avatar" />
-    <h3 style="text-align:center;margin:6px 0">${session ? session.username : 'Visitante'}</h3>
-    <p style="text-align:center;color:var(--yellow)">🔥 ${session ? session.streak||0 : 0} dias</p>
-    <p style="text-align:center;color:var(--accent)">⭐ ${session ? session.xp||0 : 0} XP</p>
-    <div style="margin-top:12px;text-align:center">
-      <button class="btn ghost" id="openProfileBtn">Perfil</button>
-    </div>
-  `;
-  sidebar.appendChild(box);
-  $('openProfileBtn').onclick = ()=> window.location.href='profile.html';
+
+/* ============================================
+   LOGIN E CADASTRO
+=============================================== */
+
+function openLogin() {
+    document.getElementById("loginModal").style.display = "flex";
 }
 
-/* ---------- Sessions / lessons generation ---------- */
-const SESSION_INFO = [
-  {icon:'⭐', title:'Fundamentos'},
-  {icon:'📘', title:'Vocabulário Básico'},
-  {icon:'🔤', title:'Gramática Inicial'},
-  {icon:'🎧', title:'Listening'},
-  {icon:'✍', title:'Writing'},
-  {icon:'💬', title:'Conversação'},
-  {icon:'🚀', title:'Intermediário'},
-  {icon:'🔥', title:'Intermediário Avançado'},
-  {icon:'🎯', title:'Pré-Fluência'},
-  {icon:'👑', title:'Domínio do Inglês'}
+function closeLogin() {
+    document.getElementById("loginModal").style.display = "none";
+}
+
+function login() {
+    const name = document.getElementById("loginName").value;
+
+    if (!users[name]) {
+        alert("Usuário não encontrado!");
+        return;
+    }
+
+    currentUser = users[name];
+    LS.save("currentUser", currentUser);
+
+    closeLogin();
+    loadMain();
+}
+
+function register() {
+    const name = document.getElementById("registerName").value;
+
+    if (users[name]) {
+        alert("Este nome já está em uso!");
+        return;
+    }
+
+    users[name] = {
+        name,
+        xp: 0,
+        streak: 0,
+        lessonsUnlocked: 1,
+        questionnaireDone: false
+    };
+
+    LS.save("users", users);
+
+    alert("Conta criada!");
+    document.getElementById("registerModal").style.display = "none";
+}
+
+
+/* ============================================
+   LOGOUT
+=============================================== */
+
+function logout() {
+    currentUser = null;
+    LS.save("currentUser", null);
+    showScreen("loginScreen");
+}
+
+
+/* ============================================
+   QUESTIONÁRIO
+=============================================== */
+
+function openQuestionnaire() {
+    document.getElementById("questionnaireModal").style.display = "flex";
+}
+
+function saveQuestionnaire() {
+    if (!currentUser) return;
+
+    currentUser.questionnaireDone = true;
+    LS.save("currentUser", currentUser);
+
+    document.getElementById("questionnaireModal").style.display = "none";
+    loadMain();
+}
+
+
+/* ============================================
+   CARREGAR PRINCIPAL
+=============================================== */
+
+function loadMain() {
+    if (!currentUser) {
+        showScreen("loginScreen");
+        return;
+    }
+
+    if (!currentUser.questionnaireDone) {
+        openQuestionnaire();
+        return;
+    }
+
+    // Atualizar UI
+    document.getElementById("navUser").innerText = currentUser.name;
+    document.getElementById("profileName").innerText = currentUser.name;
+    document.getElementById("xpCount").innerText = currentUser.xp;
+    document.getElementById("streakCount").innerText = currentUser.streak;
+
+    generateSessions();
+    showScreen("mainScreen");
+}
+
+
+/* ============================================
+   GERAR SESSÕES E LIÇÕES
+=============================================== */
+
+const sessionsData = [
+    {
+        title: "Fundamentos",
+        lessons: 20
+    },
+    {
+        title: "Vocabulário Básico",
+        lessons: 20
+    },
+    {
+        title: "Frases Comuns",
+        lessons: 20
+    },
+    {
+        title: "Gramática I",
+        lessons: 20
+    },
+    {
+        title: "Prática Escrita",
+        lessons: 20
+    },
+    {
+        title: "Conversação",
+        lessons: 20
+    },
+    {
+        title: "Intermediário I",
+        lessons: 20
+    },
+    {
+        title: "Intermediário II",
+        lessons: 20
+    },
+    {
+        title: "Avançado I",
+        lessons: 20
+    },
+    {
+        title: "Avançado II",
+        lessons: 20
+    }
 ];
 
-function renderSessions(){
-  sessionsArea.innerHTML = '';
-  let lessonNum = 1;
-  for(let s=0;s<10;s++){
-    const card = document.createElement('div');
-    card.className='session-card';
-    card.innerHTML = `<div class="session-title"><span>${SESSION_INFO[s].icon}</span> Sessão ${s+1} — ${SESSION_INFO[s].title}</div><div id="tree-${s}" class="lesson-tree"></div>`;
-    sessionsArea.appendChild(card);
-    const tree = $(`tree-${s}`);
-    for(let i=0;i<20;i++){
-      const circle = document.createElement('div');
-      circle.className='lesson-circle';
-      circle.textContent = lessonNum;
-      const unlocked = session && (lessonNum===1 || session.completed?.includes(lessonNum-1));
-      if(!unlocked){ circle.classList.add('lesson-locked'); circle.innerHTML='🔒'; }
-      if(session && session.completed && session.completed.includes(lessonNum)){ circle.classList.add('lesson-done'); circle.innerHTML='✔'; }
-      circle.onclick = () => {
-        if(circle.classList.contains('lesson-locked')) {
-          // open PIX unlock flow for the whole session: ask to unlock session s
-          if(!session){ toast('Faça login para desbloquear.'); return; }
-          openPixModalForSession(s);
-          return;
+function generateSessions() {
+    const container = document.getElementById("sessionsContainer");
+    container.innerHTML = "";
+
+    let lessonNumber = 1;
+
+    sessionsData.forEach((session, sIndex) => {
+        const div = document.createElement("div");
+        div.className = "section-box";
+
+        div.innerHTML = `
+            <h2 class="section-title">📘 Sessão ${sIndex + 1} — ${session.title}</h2>
+            <div class="lessons-grid" id="sess${sIndex}"></div>
+        `;
+
+        const grid = div.querySelector(".lessons-grid");
+
+        for (let i = 1; i <= session.lessons; i++) {
+            const unlocked = lessonNumber <= currentUser.lessonsUnlocked;
+
+            const circle = document.createElement("div");
+            circle.className = "lesson-circle " + (unlocked ? "unlocked" : "");
+
+            circle.innerHTML = unlocked ? lessonNumber : `<span class="lock-icon">🔒</span>`;
+
+            if (unlocked) {
+                circle.onclick = () => openLesson(lessonNumber);
+            }
+
+            grid.appendChild(circle);
+            lessonNumber++;
         }
-        // go to lesson page
-        pageTransition(`lesson.html?id=${lessonNum}`);
-      };
-      tree.appendChild(circle);
-      lessonNum++;
-    }
-  }
+
+        container.appendChild(div);
+    });
 }
 
-/* ---------- PIX flow (manual) ---------- */
-let _unlockSessionTarget = null;
-function openPixModalForSession(sessionIndex){
-  _unlockSessionTarget = sessionIndex;
-  openModal(pixModal);
-  // set pix key shown
-  const example = "00020126580014BR.GOV.BCB.PIX0136d9b1e552-e431-4d8b-b28e-eca5cddf654252040000530398654040.995802BR5922Edmilson...";
-  pixKeyEl.textContent = example;
-}
-function copyPixKey(){
-  navigator.clipboard?.writeText(pixKeyEl.textContent).then(()=>toast('PIX copiado.'));
-}
-function confirmPixPayment(){
-  // manual confirm: unlock all lessons in session _unlockSessionTarget
-  if(_unlockSessionTarget === null){ toast('Erro'); return; }
-  const start = _unlockSessionTarget*20 + 1;
-  const end = start + 19;
-  // mark as unlocked by setting an "unlockedSessions" array in session
-  session.unlockedSessions = session.unlockedSessions || [];
-  session.unlockedSessions.push(_unlockSessionTarget);
-  session.unlockedSessions = [...new Set(session.unlockedSessions)];
-  // unlock lessons in DB? We'll allow unlockedSessions to bypass lock
-  sessionSave(session);
-  // close
-  closeAll();
-  renderSessions();
-  toast('Sessão desbloqueada manualmente. Agora você pode acessar as aulas.');
+
+/* ============================================
+   LIÇÕES
+=============================================== */
+
+function openLesson(n) {
+    currentLesson = n;
+    showScreen("lessonScreen");
+    loadLesson(n);
 }
 
-/* ---------- Friends system ---------- */
-function addFriend(username){
-  if(!session){ toast('Faça login'); return; }
-  const target = DB.users.find(u => u.username === username);
-  if(!target){ toast('Usuário não encontrado'); return; }
-  // send request: push to target.requests
-  target.requests = target.requests || [];
-  if(target.requests.includes(session.username)){ toast('Pedido já enviado'); return; }
-  target.requests.push(session.username);
-  dbSave(DB);
-  toast('Pedido de amizade enviado.');
-}
-function acceptFriendRequest(fromUsername){
-  if(!session) return;
-  // add to session.friends
-  session.friends = session.friends || [];
-  session.friends.push(fromUsername);
-  session.friends = [...new Set(session.friends)];
-  // remove request
-  const idx = DB.users.findIndex(u=>u.id===session.id);
-  if(idx>=0) DB.users[idx] = session;
-  // add session to other user's friends
-  const other = DB.users.find(u=>u.username===fromUsername);
-  if(other){
-    other.friends = other.friends || [];
-    other.friends.push(session.username);
-  }
-  dbSave(DB);
-  sessionSave(session);
-  renderSidebar();
-  toast('Amizade aceita.');
+let currentLesson = 1;
+
+function loadLesson(n) {
+    const title = document.getElementById("lessonTitle");
+    title.innerText = `Lição ${n}`;
+
+    // Randomizar tipo de lição:
+    const types = ["arrastar", "escrever", "escolha"];
+    const type = types[Math.floor(Math.random() * types.length)];
+
+    if (type === "arrastar") loadDragLesson();
+    if (type === "escrever") loadWriteLesson();
+    if (type === "escolha") loadChoiceLesson();
 }
 
-/* ---------- Auth / Register / Questionnaire redirect ---------- */
-$('authRegisterBtn').onclick = () => {
-  const user = $('authUser').value.trim();
-  const pass = $('authPass').value.trim();
-  if(user.length < 3) return toast('Nome muito curto');
-  if(pass.length < 3) return toast('Senha muito curta');
-  if(DB.users.find(u=>u.username===user)) return toast('Nome já existe');
-  const newUser = { id: now(), username:user, pass:pass, completed:[], streak:0, xp:0, friends:[], requests:[], unlockedSessions:[] };
-  DB.users.push(newUser);
-  dbSave(DB);
-  session = newUser; sessionSave(session);
-  closeAll();
-  // go to questionnaire page (separate)
-  window.location.href = 'questionnaire.html';
-};
 
-$('authLoginBtn').onclick = () => {
-  const user = $('authUser').value.trim();
-  const pass = $('authPass').value.trim();
-  const found = DB.users.find(u=>u.username===user && u.pass===pass);
-  if(!found) return toast('Usuário ou senha incorretos');
-  session = found; sessionSave(session);
-  closeAll();
-  renderNav(); renderSidebar(); renderSessions();
-};
+/* -------- LIÇÃO DE ARRASTAR PALAVRAS -------- */
 
-/* close modal */
-$('authClose').onclick = closeAll;
-$('overlay').onclick = closeAll;
+function loadDragLesson() {
+    const el = document.getElementById("lessonContent");
+    const answer = "I like apples";
 
-/* PIX modal buttons */
-$('copyPix').onclick = copyPixKey;
-$('confirmPix').onclick = confirmPixPayment;
-$('closePix').onclick = closeAll;
+    const words = ["I", "like", "apples", "banana", "cat"];
 
-/* search users */
-searchUsers.oninput = () => {
-  const q = searchUsers.value.trim().toLowerCase();
-  if(!q){ searchResults.classList.add('hidden'); return; }
-  const filtered = DB.users.filter(u=>u.username.toLowerCase().includes(q)).slice(0,8);
-  searchResults.innerHTML = filtered.map(u=>`<div class="sres"><b>${u.username}</b> <button class="btn ghost" onclick="addFriend('${u.username}')">Adicionar</button></div>`).join('');
-  searchResults.classList.remove('hidden');
-};
+    el.innerHTML = `
+        <h3>Monte a frase correta:</h3>
+        <div id="dragWords"></div>
+        <div id="dropArea" class="drop-area"></div>
+        <button class="btn-main" onclick="checkDrag('${answer}')">Verificar</button>
+    `;
 
-/* page transition helper */
-function pageTransition(href){
-  document.body.style.opacity = '0';
-  setTimeout(()=> window.location.href = href, 240);
+    const drag = document.getElementById("dragWords");
+
+    words.forEach(w => {
+        const b = document.createElement("div");
+        b.className = "word-bubble";
+        b.draggable = true;
+        b.innerText = w;
+
+        b.ondragstart = e => {
+            e.dataTransfer.setData("text", w);
+        };
+
+        drag.appendChild(b);
+    });
+
+    const drop = document.getElementById("dropArea");
+
+    drop.ondragover = e => e.preventDefault();
+    drop.ondrop = e => {
+        e.preventDefault();
+        const w = e.dataTransfer.getData("text");
+        drop.innerHTML += `<span class="word-bubble">${w}</span>`;
+    };
 }
 
-/* ---------- Initialization ---------- */
-function init(){
-  DB = dbLoad();
-  session = sessionLoad();
-  renderNav();
-  renderSidebar();
-  renderSessions();
+function checkDrag(correct) {
+    const result = [...document.querySelectorAll("#dropArea .word-bubble")]
+        .map(e => e.innerText)
+        .join(" ");
+
+    feedback(result === correct);
 }
-init();
 
-/* expose some helpers for console */
-window._EP = { DB, session, addFriend, acceptFriendRequest, renderSessions };
 
-// End of script.js
+/* -------- LIÇÃO DE ESCREVER -------- */
+
+function loadWriteLesson() {
+    const el = document.getElementById("lessonContent");
+
+    el.innerHTML = `
+        <h3>Traduza: "Gato"</h3
