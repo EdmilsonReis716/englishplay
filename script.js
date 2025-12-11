@@ -1,586 +1,290 @@
 /* ============================================================
-   ENGLISHPLAY — SISTEMA DE AULAS ESTILO DUOLINGO
-   PARTE 1/3 — ENGINE, CARREGAMENTO DA AULA, ESTRUTURA BASE
+   ENGLISHPLAY — SCRIPT FINAL (SESSÕES + ZIG-ZAG)
    ============================================================ */
 
-(function () {
+/* ====== UTILITÁRIOS ====== */
 
-    /* =======================
-       UTILITÁRIOS
-    ======================= */
+function $(id){ return document.getElementById(id); }
 
-    function escapeHTML(str) {
-        return String(str).replace(/[&<>"']/g, c => ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;"
-        }[c]));
-    }
+function dbLoad(){
+    try{ return JSON.parse(localStorage.getItem("englishplay_db")) || { users:[] }; }
+    catch{ return { users:[] }; }
+}
+function dbSave(db){ localStorage.setItem("englishplay_db", JSON.stringify(db)); }
 
-    // carregar DB
-    function dbLoad() {
-        try {
-            return JSON.parse(localStorage.getItem("englishplay_db_v3")) || {};
-        } catch (e) {
-            return {};
-        }
-    }
+function getSession(){
+    try{ return JSON.parse(localStorage.getItem("englishplay_session")); }
+    catch{ return null; }
+}
+function setSession(s){ localStorage.setItem("englishplay_session", JSON.stringify(s)); }
 
-    // carregar sessão
-    function getSession() {
-        try {
-            return JSON.parse(localStorage.getItem("englishplay_session_v3"));
-        } catch (e) {
-            return null;
-        }
-    }
-
-    // atualizar sessão
-    function setSession(s) {
-        localStorage.setItem("englishplay_session_v3", JSON.stringify(s));
-    }
-
-    // salvar DB
-    function dbSave(db) {
-        localStorage.setItem("englishplay_db_v3", JSON.stringify(db));
-    }
-
-    /* =======================
-       VARIÁVEIS DA AULA
-    ======================= */
-
-    let db = dbLoad();
-    let session = getSession();
-
-    let exerciseContainer;
-    let verifyBtn;
-    let progressBar;
-
-    let lessonId = null;
-    let currentExerciseIndex = 0;
-    let exercises = [];
-
-    /* =======================
-       DEFINIÇÃO DOS TIPOS DE EXERCÍCIO
-    ======================= */
-
-    const LESSON_TEMPLATES = {
-
-        // ✔ múltipla escolha
-        multiple_choice: (question, options, answer) => ({
-            type: "multiple_choice",
-            question,
-            options,
-            answer
-        }),
-
-        // ✔ completar frase
-        fill_blank: (sentence, answer) => ({
-            type: "fill_blank",
-            sentence,
-            answer
-        }),
-
-        // ✔ arrastar e soltar (montar frase)
-        drag_drop: (sentence, words) => ({
-            type: "drag_drop",
-            sentence,
-            words,
-            answer: sentence.split(" ")
-        }),
-
-        // ✔ tradução
-        translate: (original, answer) => ({
-            type: "translate",
-            original,
-            answer
-        }),
-
-        // ✔ ouvir e selecionar
-        listen_choice: (text, options, answer) => ({
-            type: "listen_choice",
-            text,
-            options,
-            answer
-        })
-    };
-
-    /* =======================
-       GERAR EXERCÍCIOS PARA A AULA
-    ======================= */
-
-    function generateExercisesForLesson(lessonId) {
-
-        // você pode mudar o conteúdo aqui depois
-        return [
-            LESSON_TEMPLATES.multiple_choice(
-                "How are you?",
-                ["Como vai você?", "Onde você mora?", "Qual é seu nome?", "Você está estudando?"],
-                "Como vai você?"
-            ),
-
-            LESSON_TEMPLATES.fill_blank(
-                "I ___ a student.",
-                "am"
-            ),
-
-            LESSON_TEMPLATES.drag_drop(
-                "I like learning English",
-                ["English", "like", "learning", "I"]
-            ),
-
-            LESSON_TEMPLATES.listen_choice(
-                "Good morning",
-                ["Boa noite", "Bom dia", "Até logo"],
-                "Bom dia"
-            ),
-
-            LESSON_TEMPLATES.translate(
-                "I have a dog",
-                "eu tenho um cachorro"
-            )
-        ];
-    }
-
-    /* =======================
-       CARREGAR A AULA
-    ======================= */
-
-    function loadLesson() {
-
-        if (!location.pathname.includes("lesson.html")) return;
-
-        const params = new URLSearchParams(location.search);
-        lessonId = Number(params.get("id"));
-
-        exerciseContainer = document.getElementById("exerciseContainer");
-        verifyBtn = document.getElementById("verifyBtn");
-        progressBar = document.getElementById("progressBar");
-
-        // gerar exercícios
-        exercises = generateExercisesForLesson(lessonId);
-        currentExerciseIndex = 0;
-
-        renderExercise();
-        updateProgress();
-    }
-
-    /* =======================
-       ATUALIZAR BARRA DE PROGRESSO
-    ======================= */
-
-    function updateProgress() {
-        const percent = ((currentExerciseIndex) / exercises.length) * 100;
-        progressBar.style.width = percent + "%";
-    }
-
-    /* =======================
-       RENDERIZAR EXERCÍCIO ATUAL
-    ======================= */
-
-    function renderExercise() {
-
-        verifyBtn.disabled = true;
-        const ex = exercises[currentExerciseIndex];
-
-        switch (ex.type) {
-
-            case "multiple_choice":
-                renderMultipleChoice(ex);
-                break;
-
-            case "fill_blank":
-                renderFillBlank(ex);
-                break;
-
-            case "drag_drop":
-                renderDragDrop(ex);
-                break;
-
-            case "translate":
-                renderTranslate(ex);
-                break;
-
-            case "listen_choice":
-                renderListenChoice(ex);
-                break;
-
-            default:
-                exerciseContainer.innerHTML = "Exercício inválido.";
-        }
-    }
-
-    /* ============================================================
-       A PARTIR DAQUI (PARTE 2), ENVIAREI OS RENDERIZADORES:
-       - múltipla escolha
-       - completar frase
-       - drag & drop
-       - tradução
-       - ouvir e responder
-       - sistema de verificação
-       ============================================================ */
-
-    window._lessonEngine = {
-        loadLesson,
-        renderExercise,
-        updateProgress
-    };
-
-    // iniciar automaticamente
-    loadLesson();
-
-})();
 /* ============================================================
-   PARTE 2/3 — RENDERIZAÇÃO DOS EXERCÍCIOS
+   VARIÁVEIS GLOBAIS
    ============================================================ */
 
-let userAnswer = null;
-let dragDropSlots = [];
-let dragDropBank = [];
+let db = dbLoad();
+let session = getSession();
 
-/* ============================
-   1) MÚLTIPLA ESCOLHA
-============================ */
+/* ============================================================
+   LOGIN / CADASTRO
+   ============================================================ */
 
-function renderMultipleChoice(ex) {
-    exerciseContainer.innerHTML = `
-        <h2>${escapeHTML(ex.question)}</h2>
-        <div class="options-grid" id="optionsGrid"></div>
-    `;
-
-    const grid = document.getElementById("optionsGrid");
-
-    ex.options.forEach(option => {
-        const btn = document.createElement("button");
-        btn.className = "opt-btn";
-        btn.textContent = option;
-
-        btn.onclick = () => {
-            document.querySelectorAll(".opt-btn").forEach(b => b.classList.remove("selected"));
-            btn.classList.add("selected");
-            userAnswer = option;
-            verifyBtn.disabled = false;
-        };
-
-        grid.appendChild(btn);
-    });
+function openAuth(){
+    $("overlay").classList.remove("hidden");
+    $("authModal").classList.remove("hidden");
 }
 
-/* ============================
-   2) COMPLETAR FRASE
-============================ */
+function closeAllModals(){
+    document.querySelectorAll(".modal").forEach(m=>m.classList.add("hidden"));
+    $("overlay").classList.add("hidden");
+}
 
-function renderFillBlank(ex) {
-    exerciseContainer.innerHTML = `
-        <h2>Complete:</h2>
-        <div class="fill-container">
-            <span>${ex.sentence.replace("___", `<input id="fillInput" class='fill-input'>`)}</span>
+function renderUserArea(){
+    const ua = $("userArea");
+
+    if(!session){
+        ua.innerHTML = `<button onclick="openAuth()">Entrar</button>`;
+        return;
+    }
+
+    ua.innerHTML = `
+        <button onclick="logout()">Sair</button>
+    `;
+}
+
+function renderSidebar(){
+    const sb = $("sidebar");
+    if(!session){
+        sb.innerHTML = `
+            <h3 style="color:var(--yellow)">Visitante</h3>
+            <p>Entre para ver sua conta.</p>
+        `;
+        return;
+    }
+
+    sb.innerHTML = `
+        <img src="logo.png" class="profile-avatar">
+        <h3>${session.username}</h3>
+        <p style="color:var(--yellow)">🔥 ${session.streak || 0} dias</p>
+        <p style="color:var(--accent)">⭐ XP: ${session.xp || 0}</p>
+    `;
+}
+
+$("authLoginBtn").onclick = () => {
+    const user = $("authUser").value.trim();
+    const pass = $("authPass").value.trim();
+
+    const found = db.users.find(u => u.username === user && u.pass === pass);
+
+    if(!found){
+        alert("Usuário ou senha incorretos");
+        return;
+    }
+
+    session = found;
+    setSession(session);
+    closeAllModals();
+    renderUserArea();
+    renderSidebar();
+    renderSessions();
+};
+
+$("authRegisterBtn").onclick = () => {
+    const user = $("authUser").value.trim();
+    const pass = $("authPass").value.trim();
+
+    if(db.users.find(u=>u.username===user)){
+        alert("Este nome já existe!");
+        return;
+    }
+
+    const newUser = {
+        id: Date.now(),
+        username: user,
+        pass: pass,
+        completed: [],
+        streak: 0,
+        xp: 0,
+        questionnaire: null
+    };
+
+    db.users.push(newUser);
+    dbSave(db);
+
+    session = newUser;
+    setSession(session);
+
+    closeAllModals();
+    openQuestionnaire();
+};
+
+function logout(){
+    session = null;
+    localStorage.removeItem("englishplay_session");
+    renderUserArea();
+    renderSidebar();
+    renderSessions();
+}
+
+/* ============================================================
+   QUESTIONÁRIO
+   ============================================================ */
+
+function openQuestionnaire(){
+    $("overlay").classList.remove("hidden");
+    $("questionModal").classList.remove("hidden");
+}
+
+$("finishQuestion").onclick = () => {
+    session.questionnaire = {
+        source: $("q_source").value,
+        days: $("q_days").value,
+        reason: $("q_reason").value,
+        level: [...document.getElementsByName("q_level")].find(r=>r.checked).value
+    };
+
+    const idx = db.users.findIndex(u=>u.id===session.id);
+    db.users[idx] = session;
+    dbSave(db);
+
+    closeAllModals();
+    renderSessions();
+};
+
+/* ============================================================
+   SISTEMA DE SESSÕES (10 × 20 AULAS)
+   ============================================================ */
+
+const SESSION_INFO = [
+    { icon:"⭐", title:"Fundamentos" },
+    { icon:"📘", title:"Vocabulário Básico" },
+    { icon:"🔤", title:"Gramática Inicial" },
+    { icon:"🎧", title:"Listening" },
+    { icon:"✍", title:"Writing" },
+    { icon:"💬", title:"Conversação" },
+    { icon:"🚀", title:"Intermediário" },
+    { icon:"🔥", title:"Intermediário Avançado" },
+    { icon:"🎯", title:"Pré-Fluência" },
+    { icon:"👑", title:"Domínio do Inglês" },
+];
+
+/* ============================================================
+   GERAR TODAS AS AULAS DO SITE
+   ============================================================ */
+
+function renderSessions(){
+    const area = $("sessionsArea");
+    area.innerHTML = "";
+
+    let lessonNum = 1;
+
+    for(let s = 0; s < 10; s++){
+
+        const card = document.createElement("div");
+        card.className = "session-card";
+
+        card.innerHTML = `
+            <h2 class="session-title">
+                <span class="icon">${SESSION_INFO[s].icon}</span>
+                Sessão ${s+1} — ${SESSION_INFO[s].title}
+            </h2>
+
+            <div class="lesson-tree" id="session${s}"></div>
+        `;
+
+        area.appendChild(card);
+
+        const tree = card.querySelector(".lesson-tree");
+
+        for(let i = 0; i < 20; i++){
+            const row = document.createElement("div");
+            row.className = "lesson-row";
+
+            const circle = document.createElement("div");
+            circle.className = "lesson-circle";
+            circle.textContent = lessonNum;
+
+            const unlocked =
+                session &&
+                (
+                    lessonNum === 1 ||
+                    session.completed.includes(lessonNum - 1)
+                );
+
+            if(!unlocked){
+                circle.classList.add("lesson-locked");
+                circle.innerHTML = "🔒";
+            }
+
+            if(session && session.completed.includes(lessonNum)){
+                circle.classList.add("lesson-done");
+                circle.innerHTML = "✔";
+            }
+
+            circle.onclick = () => {
+                if(circle.classList.contains("lesson-locked")) return;
+                pageTransition("lesson.html?id="+lessonNum);
+            };
+
+            row.appendChild(circle);
+            tree.appendChild(row);
+
+            lessonNum++;
+        }
+    }
+}
+
+/* ============================================================
+   TRANSIÇÃO ENTRE PÁGINAS
+   ============================================================ */
+
+function pageTransition(url){
+    document.body.classList.add("fade-out");
+    setTimeout(()=>{ location.href = url; }, 300);
+}
+
+/* adicionar estilo fade-out */
+const style = document.createElement("style");
+style.innerHTML = `
+.fade-out {
+    opacity: 0;
+    transition: opacity .3s ease;
+}
+`;
+document.head.appendChild(style);
+
+/* ============================================================
+   PESQUISA DE AMIGOS (VISUAL)
+   ============================================================ */
+
+$("searchUsers").oninput = () => {
+    const box = $("searchUsers").value.trim().toLowerCase();
+    const results = $("searchResults");
+
+    if(box.length === 0){
+        results.classList.add("hidden");
+        return;
+    }
+
+    const filtered = db.users.filter(u=>u.username.toLowerCase().includes(box));
+
+    results.innerHTML = filtered.map(u=>`
+        <div style="padding:6px 10px;border-bottom:1px solid #222;">
+            ${u.username}
         </div>
-    `;
+    `).join("");
 
-    const input = document.getElementById("fillInput");
-
-    input.oninput = () => {
-        userAnswer = input.value.trim().toLowerCase();
-        verifyBtn.disabled = userAnswer === "";
-    };
-}
-
-/* ============================
-   3) DRAG & DROP — ARRANJAR PALAVRAS
-============================ */
-
-function renderDragDrop(ex) {
-    exerciseContainer.innerHTML = `
-        <h2>Monte a frase:</h2>
-
-        <div class="drag-target" id="dragTarget"></div>
-        <div class="drag-bank" id="dragBank"></div>
-    `;
-
-    dragDropSlots = [];
-    dragDropBank = [];
-
-    const target = document.getElementById("dragTarget");
-    const bank = document.getElementById("dragBank");
-
-    // embaralhar palavras
-    const shuffled = [...ex.words].sort(() => Math.random() - 0.5);
-
-    // slots alvo
-    ex.answer.forEach(() => {
-        const slot = document.createElement("div");
-        slot.className = "slot";
-        slot.dataset.filled = "false";
-        target.appendChild(slot);
-        dragDropSlots.push(slot);
-    });
-
-    // palavras clicáveis
-    shuffled.forEach(word => {
-        const w = document.createElement("div");
-        w.className = "drag-word";
-        w.textContent = word;
-
-        w.onclick = () => {
-            const emptySlot = dragDropSlots.find(s => s.dataset.filled === "false");
-            if (!emptySlot) return;
-
-            emptySlot.textContent = word;
-            emptySlot.dataset.filled = "true";
-            w.remove();
-
-            checkDragStatus(ex);
-        };
-
-        bank.appendChild(w);
-        dragDropBank.push(w);
-    });
-}
-
-function checkDragStatus(ex) {
-    const arr = dragDropSlots.map(s => s.textContent);
-    if (arr.every(Boolean)) {
-        userAnswer = arr.join(" ");
-        verifyBtn.disabled = false;
-    }
-}
-
-/* ============================
-   4) TRADUÇÃO
-============================ */
-
-function renderTranslate(ex) {
-    exerciseContainer.innerHTML = `
-        <h2>Traduza:</h2>
-        <p class="translate-original">${escapeHTML(ex.original)}</p>
-        <textarea id="translateInput" class="translate-box" placeholder="Digite sua resposta..."></textarea>
-    `;
-
-    const input = document.getElementById("translateInput");
-
-    input.oninput = () => {
-        userAnswer = input.value.trim().toLowerCase();
-        verifyBtn.disabled = userAnswer.length === 0;
-    };
-}
-
-/* ============================
-   5) OUVIR E RESPONDER
-============================ */
-
-function renderListenChoice(ex) {
-    exerciseContainer.innerHTML = `
-        <h2>Ouça e escolha a tradução correta:</h2>
-
-        <button class="listen-btn" id="listenBtn">▶ Ouvir</button>
-
-        <div class="options-grid" id="listenOptions"></div>
-    `;
-
-    const listenBtn = document.getElementById("listenBtn");
-
-    listenBtn.onclick = () => speakText(ex.text);
-
-    const grid = document.getElementById("listenOptions");
-
-    ex.options.forEach(option => {
-        const btn = document.createElement("button");
-        btn.className = "opt-btn";
-        btn.textContent = option;
-
-        btn.onclick = () => {
-            document.querySelectorAll(".opt-btn").forEach(b => b.classList.remove("selected"));
-            btn.classList.add("selected");
-            userAnswer = option;
-            verifyBtn.disabled = false;
-        };
-
-        grid.appendChild(btn);
-    });
-}
-
-/* ============================
-   SISTEMA DE FALA (TTS)
-============================ */
-
-function speakText(text) {
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = "en-US";
-    window.speechSynthesis.speak(msg);
-}
+    results.classList.remove("hidden");
+};
 
 /* ============================================================
-   NA PARTE 3/3:
-   ✔ Sistema de verificação (correto/errado)
-   ✔ Sons ✔ e ✘
-   ✔ Próximo exercício
-   ✔ Finalização da aula (confete + registrar progresso)
+   INIT
    ============================================================ */
+
+renderUserArea();
+renderSidebar();
+renderSessions();
+
 /* ============================================================
-   PARTE 3/3 — VERIFICAÇÃO, AVANÇO E FINALIZAÇÃO
+   FIM DO SCRIPT
    ============================================================ */
-
-/* ============================
-   SOM DE ACERTO E ERRO
-============================ */
-
-const correctSound = new Audio(
-    "https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"
-);
-const wrongSound = new Audio(
-    "https://assets.mixkit.co/active_storage/sfx/1384/1384-preview.mp3"
-);
-
-/* ============================
-   VERIFICAR RESPOSTA
-============================ */
-
-verifyBtn.onclick = () => verifyAnswer();
-
-function verifyAnswer() {
-
-    const exercise = exercises[currentExerciseIndex];
-    let correct = false;
-
-    switch (exercise.type) {
-
-        case "multiple_choice":
-        case "listen_choice":
-            correct = (userAnswer === exercise.answer);
-            break;
-
-        case "fill_blank":
-            correct = (userAnswer === exercise.answer.toLowerCase());
-            break;
-
-        case "drag_drop":
-            correct = (userAnswer === exercise.answer.join(" "));
-            break;
-
-        case "translate":
-            correct = (userAnswer === exercise.answer.toLowerCase());
-            break;
-    }
-
-    if (correct) {
-        showCorrectFeedback();
-    } else {
-        showWrongFeedback();
-    }
-}
-
-/* ============================
-   FEEDBACK DE ACERTO
-============================ */
-
-function showCorrectFeedback() {
-
-    correctSound.currentTime = 0;
-    correctSound.play();
-
-    exerciseContainer.classList.add("correctFlash");
-
-    setTimeout(() => {
-        exerciseContainer.classList.remove("correctFlash");
-        nextExercise();
-    }, 900);
-}
-
-/* ============================
-   FEEDBACK DE ERRO
-============================ */
-
-function showWrongFeedback() {
-
-    wrongSound.currentTime = 0;
-    wrongSound.play();
-
-    exerciseContainer.classList.add("wrongFlash");
-
-    setTimeout(() => {
-        exerciseContainer.classList.remove("wrongFlash");
-    }, 900);
-}
-
-/* ============================
-   IR PARA O PRÓXIMO EXERCÍCIO
-============================ */
-
-function nextExercise() {
-
-    currentExerciseIndex++;
-
-    if (currentExerciseIndex >= exercises.length) {
-        finishLesson();
-    } else {
-        userAnswer = null;
-        verifyBtn.disabled = true;
-        renderExercise();
-        updateProgress();
-    }
-}
-
-/* ============================
-   FINALIZAR AULA
-============================ */
-
-function finishLesson() {
-
-    // registrar no progresso do usuário
-    if (session) {
-        session.completed = session.completed || [];
-
-        if (!session.completed.includes(lessonId)) {
-            session.completed.push(lessonId);
-        }
-
-        setSession(session);
-
-        let db = dbLoad();
-        let idx = db.users.findIndex(u => u.id === session.id);
-        if (idx >= 0) db.users[idx] = session;
-        dbSave(db);
-    }
-
-    // confete
-    fireConfetti();
-
-    exerciseContainer.innerHTML = `
-        <h2 class="lesson-finished-title">Parabéns! 🎉</h2>
-        <p class="lesson-finished-text">Você concluiu esta aula.</p>
-        <button class="btn big-btn" onclick="location.href='index.html'">
-            Voltar ao início
-        </button>
-    `;
-
-    verifyBtn.style.display = "none";
-}
-
-/* ============================
-   CONFETTI
-============================ */
-
-function fireConfetti() {
-    const conf = document.createElement("div");
-    conf.className = "confetti";
-
-    for (let i = 0; i < 40; i++) {
-        const p = document.createElement("div");
-        p.className = "confetti-piece";
-        p.style.left = Math.random() * 100 + "%";
-        p.style.background = ["#f5c518", "#00ff80", "#fff"][Math.floor(Math.random() * 3)];
-        conf.appendChild(p);
-    }
-
-    document.body.appendChild(conf);
-
-    setTimeout(() => conf.remove(), 2000);
-}
-
-/* ============================
-   FIM DA PARTE 3/3
-============================ */
-
-console.log("%cAula carregada com sucesso — Engine Duolingo ativada.", "color: yellow; font-size: 14px");
