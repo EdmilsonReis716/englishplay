@@ -1,172 +1,146 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrar • EnglishPlay</title>
-
-    <link rel="stylesheet" href="style.css">
+    <title>Entrar — EnglishPlay</title>
+    <link rel="stylesheet" href="estilo.css">
 
     <style>
-        .auth-container {
+        /* Estilo exclusivo da página de autenticação */
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #000;
+        }
+
+        .auth-box {
             width: 420px;
             background: #111;
-            border: 3px solid #ffcc00;
+            padding: 25px;
             border-radius: 20px;
-            margin: 130px auto;
-            padding: 30px;
+            border: 3px solid #ffcc00;
             text-align: center;
-            animation: fadeIn .3s ease;
+            animation: pop 0.3s ease;
         }
 
-        @keyframes fadeIn {
-            from {opacity: 0; transform: translateY(20px);}
-            to {opacity: 1; transform: translateY(0);}
+        .auth-box img {
+            width: 120px;
+            margin-bottom: 10px;
+            border-radius: 10px;
         }
 
-        .auth-input {
+        .auth-box h2 {
+            margin-bottom: 20px;
+            font-size: 28px;
+            color: #ffcc00;
+        }
+
+        input {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             border-radius: 12px;
+            border: 2px solid #333;
             background: #1a1a1a;
             color: white;
-            border: 2px solid #333;
             margin-bottom: 15px;
+            font-size: 15px;
         }
 
-        .auth-btn {
+        .btn {
             width: 100%;
             padding: 12px;
             background: #ffcc00;
+            border-radius: 15px;
             color: black;
             font-weight: 700;
-            border-radius: 12px;
+            margin-top: 5px;
             cursor: pointer;
-            transition: .25s;
-            margin-bottom: 12px;
+            transition: 0.3s;
         }
 
-        .auth-btn:hover {
+        .btn:hover {
             transform: scale(1.05);
         }
 
-        .auth-logo {
-            width: 120px;
-            margin-bottom: 20px;
-            animation: float 2.2s infinite ease-in-out;
-        }
-
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-
-        p {
-            margin-top: 15px;
+        .or {
+            margin: 15px 0;
             opacity: 0.7;
+            font-size: 14px;
+        }
+
+        @keyframes pop {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
 
 <body>
 
-<!-- NAVBAR -->
-<header class="navbar">
-    <div class="nav-logo" onclick="location.href='index.html'">
+    <div class="auth-box">
         <img src="logo.png">
-        <span class="nav-title">EnglishPlay</span>
+
+        <h2>Bem-vindo!</h2>
+
+        <input type="text" id="username" placeholder="Nome de usuário">
+
+        <button class="btn" onclick="entrar()">Entrar</button>
+
+        <div class="or">ou</div>
+
+        <input type="text" id="newUser" placeholder="Criar novo nome">
+
+        <button class="btn" onclick="criarConta()">Criar conta</button>
     </div>
 
-    <input type="text" class="search-box" placeholder="Pesquisar..." disabled>
+    <script src="storage.js"></script>
 
-    <div class="nav-user" onclick="location.href='auth.html'">Entrar</div>
-</header>
+    <script>
+        // Se já estiver logado → vai para index.html
+        if (getLoggedUser()) {
+            window.location.href = "index.html";
+        }
 
+        function entrar() {
+            let nome = document.getElementById("username").value.trim();
 
-<!-- CONTAINER -->
-<div class="auth-container">
+            if (nome.length < 2) {
+                alert("Digite um nome válido.");
+                return;
+            }
 
-    <img src="logo.png" class="auth-logo">
+            let res = loginUser(nome);
 
-    <h1 style="color:#ffcc00; margin-bottom:20px;">Bem-vindo!</h1>
+            if (!res.ok) {
+                alert(res.message);
+                return;
+            }
 
-    <!-- LOGIN -->
-    <input id="loginName" class="auth-input" placeholder="Nome de usuário">
-    <button class="auth-btn" onclick="login()">Entrar</button>
+            window.location.href = "index.html";
+        }
 
-    <p>ou</p>
+        function criarConta() {
+            let nome = document.getElementById("newUser").value.trim();
 
-    <!-- CADASTRO -->
-    <input id="registerName" class="auth-input" placeholder="Criar novo nome">
-    <button class="auth-btn" onclick="register()">Criar conta</button>
-</div>
+            if (nome.length < 2) {
+                alert("Escolha um nome válido.");
+                return;
+            }
 
+            let res = createUser(nome);
 
-<script>
-/* =====================================================
-   BANCO LOCAL
-===================================================== */
-let USERS = JSON.parse(localStorage.getItem("users")) || {};
-let SESSION = JSON.parse(localStorage.getItem("session")) || null;
+            if (!res.ok) {
+                alert(res.message);
+                return;
+            }
 
-function saveUsers(){ localStorage.setItem("users", JSON.stringify(USERS)); }
-function saveSession(){ localStorage.setItem("session", JSON.stringify(SESSION)); }
-
-
-/* =====================================================
-   LOGIN
-===================================================== */
-function login() {
-    let name = document.getElementById("loginName").value.trim();
-
-    if (!USERS[name]) {
-        alert("Usuário não encontrado!");
-        return;
-    }
-
-    SESSION = USERS[name];
-    saveSession();
-
-    window.location.href = "index.html";
-}
-
-
-/* =====================================================
-   CADASTRO
-===================================================== */
-function register() {
-    let name = document.getElementById("registerName").value.trim();
-
-    if (name.length < 3) {
-        alert("Nome muito curto!");
-        return;
-    }
-    if (USERS[name]) {
-        alert("Nome já existe!");
-        return;
-    }
-
-    USERS[name] = {
-        name,
-        avatar: "logo.png",
-        xp: 0,
-        streak: 0,
-        lessonsUnlocked: 1,
-        questionnaireDone: false,
-        friends: [],
-        requests: [],
-        nameChanges: 0
-    };
-
-    saveUsers();
-
-    SESSION = USERS[name];
-    saveSession();
-
-    window.location.href = "questionario.html";
-}
-</script>
+            alert("Conta criada! Agora faça login.");
+        }
+    </script>
 
 </body>
 </html>
