@@ -1,200 +1,210 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Questionário — EnglishPlay</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    /* Pequenos ajustes específicos da página (mantém o visual do site) */
-    .page-card {
-      max-width: 720px;
-      margin: 32px auto;
-      padding: 22px;
-      border-radius: 14px;
-      background: #0f0f10;
-      border: 2px solid var(--yellow);
-    }
-    .page-grid {
-      display: grid;
-      grid-template-columns: 1fr 380px;
-      gap: 22px;
-      align-items: start;
-    }
-    .profile-panel {
-      background: var(--card);
-      padding:16px;
-      border-radius:12px;
-      text-align:center;
-      border:1px solid #222;
-    }
-    .profile-avatar-lg { width:130px;height:130px;border-radius:50%;border:4px solid var(--yellow);margin:auto;display:block; }
-    .question-box { padding:14px; border-radius:12px; background:#0e0e0e; border:1px solid #222; }
-    .q-row { margin-top:10px; display:flex; flex-direction:column; gap:8px; }
-    .q-actions { margin-top:14px; display:flex; gap:12px; }
-    .btn.full { width:100%; padding:12px; border-radius:12px; font-weight:800; background:var(--yellow); color:#000; border:none; cursor:pointer; }
-    .note { font-size:13px; color:var(--text-muted); margin-top:8px; }
-    @media(max-width:900px){
-      .page-grid { grid-template-columns: 1fr; }
-      .profile-panel { order: -1; }
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Questionário — EnglishPlay</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="storage.js" defer></script>
+    <script src="script.js" defer></script>
+
+    <style>
+        .q-container {
+            max-width: 900px;
+            margin: 120px auto;
+            background: #111;
+            padding: 35px;
+            border-radius: 20px;
+            border: 3px solid #ffcc00;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .q-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ffcc00;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .q-box {
+            margin-bottom: 30px;
+        }
+
+        .q-box label {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        select {
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            background: #1b1b1b;
+            color: white;
+            border: 2px solid #333;
+            font-size: 16px;
+        }
+
+        .mascot {
+            width: 140px;
+            display: block;
+            margin: 0 auto 20px auto;
+            animation: float 2.2s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
 </head>
-<body class="page fade-in">
 
-  <!-- Navbar reuse (logo + search) -->
-  <header class="navbar">
-    <div class="nav-left">
-      <img src="logo.png" class="logo-small" />
-      <div class="brand-area">
-        <div class="brand">EnglishPlay</div>
-        <div class="subtitle">Seu portal de estudos</div>
-      </div>
+<body>
+
+<header class="navbar">
+    <div class="navbar-left">
+        <img src="logo.png" class="nav-logo">
+        <span class="nav-title">EnglishPlay</span>
     </div>
 
-    <div class="nav-middle">
-      <input id="searchUsersTop" placeholder="Pesquisar usuários..." />
+    <div class="navbar-right">
+        <button onclick="logout()" class="btn-logout">Sair</button>
+    </div>
+</header>
+
+
+<div class="q-container">
+
+    <img src="logo.png" class="mascot">
+
+    <h1 class="q-title">Questionário Inicial</h1>
+
+    <div class="q-box">
+        <label>1. Onde você conheceu o EnglishPlay?</label>
+        <select id="q1">
+            <option>Instagram</option>
+            <option>TikTok</option>
+            <option>Facebook</option>
+            <option>Indicação de amigo</option>
+            <option>Outro</option>
+        </select>
     </div>
 
-    <div id="userAreaTop" class="nav-right"></div>
-  </header>
-
-  <main class="page-card">
-
-    <div class="page-grid">
-      <!-- esquerda: questionário -->
-      <div>
-        <h2 style="margin:0 0 8px 0;">Questionário inicial</h2>
-        <p class="note">Ajuda a personalizar seu plano — leve 1 minuto.</p>
-
-        <div class="question-box" id="questionBox">
-
-          <div class="q-row">
-            <label>Como ficou sabendo do EnglishPlay?</label>
-            <select id="q_source">
-              <option>Instagram</option>
-              <option>TikTok</option>
-              <option>Amigos</option>
-              <option>Outro</option>
-            </select>
-          </div>
-
-          <div class="q-row">
-            <label>Meta diária (dias consecutivos)</label>
-            <select id="q_days">
-              <option value="3">3 dias</option>
-              <option value="7">7 dias</option>
-              <option value="14">14 dias</option>
-              <option value="30">30 dias</option>
-            </select>
-          </div>
-
-          <div class="q-row">
-            <label>Para que você quer aprender inglês?</label>
-            <select id="q_reason">
-              <option>Estudos</option>
-              <option>Trabalho</option>
-              <option>Viagem</option>
-              <option>Lazer</option>
-            </select>
-          </div>
-
-          <div class="q-row">
-            <label>Nível atual</label>
-            <div style="display:flex;gap:18px;align-items:center;">
-              <label><input type="radio" name="q_level" value="nada" checked> Nada</label>
-              <label><input type="radio" name="q_level" value="pouco"> Pouco</label>
-              <label><input type="radio" name="q_level" value="basico"> Básico</label>
-              <label><input type="radio" name="q_level" value="fluente"> Fluente</label>
-            </div>
-          </div>
-
-          <div class="q-actions">
-            <button id="qSaveBtn" class="btn full">Finalizar e voltar</button>
-            <button id="qCancelBtn" class="btn ghost">Cancelar</button>
-          </div>
-
-          <div id="qMsg" class="note" style="display:none"></div>
-        </div>
-      </div>
-
-      <!-- direita: mini perfil -->
-      <aside class="profile-panel">
-        <img id="profileAvatar" src="logo.png" class="profile-avatar-lg" alt="Avatar">
-        <h3 id="profileName" style="margin-top:12px">Visitante</h3>
-        <div id="profileStats" style="margin-top:8px;color:var(--text-muted)">—</div>
-        <div style="margin-top:12px">
-          <button id="backHome" class="btn ghost">Voltar ao início</button>
-        </div>
-      </aside>
+    <div class="q-box">
+        <label>2. Qual seu nível atual?</label>
+        <select id="q2">
+            <option>Não sei nada</option>
+            <option>Sei o básico</option>
+            <option>Consigo formar frases</option>
+            <option>Intermediário</option>
+            <option>Avançado</option>
+        </select>
     </div>
 
-  </main>
+    <div class="q-box">
+        <label>3. Sua meta diária?</label>
+        <select id="q3">
+            <option>5 minutos</option>
+            <option>10 minutos</option>
+            <option>20 minutos</option>
+            <option>30 minutos</option>
+            <option>1 hora</option>
+        </select>
+    </div>
+
+    <div class="q-box">
+        <label>4. Seu objetivo principal?</label>
+        <select id="q4">
+            <option>Viagens</option>
+            <option>Trabalho</option>
+            <option>Escola/Faculdade</option>
+            <option>Conversação</option>
+            <option>Hobby</option>
+        </select>
+    </div>
+
+    <div class="q-box">
+        <label>5. Faixa etária</label>
+        <select id="q5">
+            <option>- de 13 anos</option>
+            <option>13 a 17 anos</option>
+            <option>18 a 24 anos</option>
+            <option>25 a 35 anos</option>
+            <option>36+</option>
+        </select>
+    </div>
+
+    <div class="q-box">
+        <label>6. Quanto você já estudou inglês?</label>
+        <select id="q6">
+            <option>Nada</option>
+            <option>Um pouco</option>
+            <option>Estudo há meses</option>
+            <option>Estudo há anos</option>
+        </select>
+    </div>
+
+    <div class="q-box">
+        <label>7. Quer receber desafios semanais?</label>
+        <select id="q7">
+            <option>Sim</option>
+            <option>Não</option>
+        </select>
+    </div>
+
+    <div class="q-box">
+        <label>8. Você prefere que tipo de aula?</label>
+        <select id="q8">
+            <option>Aulas curtas</option>
+            <option>Aulas completas</option>
+        </select>
+    </div>
+
+    <div class="q-box">
+        <label>9. Qual tipo de conteúdo te motiva?</label>
+        <select id="q9">
+            <option>Vocabulário</option>
+            <option>Gramática</option>
+            <option>Conversação</option>
+            <option>Listening</option>
+            <option>Writing</option>
+        </select>
+    </div>
+
+    <div class="q-box">
+        <label>10. Qual sua meta com o aplicativo?</label>
+        <select id="q10">
+            <option>Falar inglês fluentemente</option>
+            <option>Melhorar minha escrita</option>
+            <option>Aprimorar escuta</option>
+            <option>Passar em provas</option>
+            <option>Estudar por diversão</option>
+        </select>
+    </div>
+
+    <button class="btn-main" onclick="finishQuestionnaire()">Finalizar Questionário</button>
+
+</div>
 
 <script>
-/* questionnaire.html script — salva no localStorage e redireciona */
+function finishQuestionnaire() {
+    let user = JSON.parse(localStorage.getItem("currentUser"));
 
-function dbLoad(){
-  try{ return JSON.parse(localStorage.getItem("englishplay_db")) || { users: [] }; } catch { return { users: [] }; }
+    if (!user) {
+        alert("Erro: nenhuma conta ativa!");
+        return;
+    }
+
+    user.questionnaireDone = true;
+    localStorage.setItem("currentUser", JSON.stringify(user));
+
+    alert("Questionário concluído!");
+    window.location.href = "index.html";
 }
-function dbSave(db){ localStorage.setItem("englishplay_db", JSON.stringify(db)); }
-function getSession(){ try{ return JSON.parse(localStorage.getItem("englishplay_session")); }catch{ return null; } }
-function setSession(s){ localStorage.setItem("englishplay_session", JSON.stringify(s)); }
-
-const qSaveBtn = document.getElementById('qSaveBtn');
-const qCancelBtn = document.getElementById('qCancelBtn');
-const profileName = document.getElementById('profileName');
-const profileStats = document.getElementById('profileStats');
-const profileAvatar = document.getElementById('profileAvatar');
-
-function showProfileInfo(){
-  const s = getSession();
-  if(!s){
-    profileName.textContent = "Visitante";
-    profileStats.textContent = "Faça login para salvar progresso.";
-    return;
-  }
-  profileName.textContent = s.username;
-  profileStats.innerHTML = `🔥 ${s.streak || 0} dias<br>⭐ ${s.xp || 0} XP`;
-  if(s.avatar) profileAvatar.src = s.avatar;
-}
-
-/* Salva o questionário no usuário logado e volta para index */
-qSaveBtn.addEventListener('click', ()=>{
-  const s = getSession();
-  if(!s){
-    alert("Você precisa fazer login antes de finalizar o questionário.");
-    return;
-  }
-
-  const source = document.getElementById('q_source').value;
-  const days = document.getElementById('q_days').value;
-  const reason = document.getElementById('q_reason').value;
-  const level = document.querySelector("input[name='q_level']:checked").value;
-
-  s.questionnaire = { source, days, reason, level };
-
-  // atualizar no db
-  const db = dbLoad();
-  const idx = db.users.findIndex(u=>u.id === s.id);
-  if(idx >= 0) db.users[idx] = s;
-  dbSave(db);
-  setSession(s);
-
-  // mensagem rápida e redirecionamento
-  const msg = document.getElementById('qMsg');
-  msg.style.display = 'block';
-  msg.textContent = 'Questionário salvo! Redirecionando...';
-  setTimeout(()=>{ window.location.href = 'index.html'; }, 900);
-});
-
-/* cancelar volta pra home sem salvar */
-qCancelBtn.addEventListener('click', ()=> window.location.href = 'index.html');
-
-/* botão voltar do painel lateral */
-document.getElementById('backHome').addEventListener('click', ()=> window.location.href = 'index.html');
-
-showProfileInfo();
 </script>
 
 </body>
