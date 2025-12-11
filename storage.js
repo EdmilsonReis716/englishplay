@@ -1,240 +1,100 @@
 /* ============================================================
-   storage.js — Sistema de armazenamento central do EnglishPlay
-   Gerencia:
-   ✔ Usuários
-   ✔ Sessão atual
-   ✔ Progresso de aulas
-   ✔ XP, streak
-   ✔ Amigos e pedidos
+   storage.js — Banco de Dados Local do EnglishPlay
+   Sistema seguro, organizado e expansível.
 ============================================================ */
 
+/* --------------------------
+   CARREGAR BANCO
+-------------------------- */
+function load(key, defaultValue = null) {
+    try {
+        let data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : defaultValue;
+    } catch (e) {
+        console.warn("Erro ao carregar:", key, e);
+        return defaultValue;
+    }
+}
 
-/* ------------------------------
-   Atalhos úteis
------------------------------- */
-
-const Store = {
-    save(key, value) {
+/* --------------------------
+   SALVAR NO BANCO
+-------------------------- */
+function save(key, value) {
+    try {
         localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+        console.warn("Erro ao salvar:", key, e);
+    }
+}
+
+/* --------------------------
+   BANCO PRINCIPAL
+-------------------------- */
+let DB = {
+    users: load("users", {}),
+
+    session: load("session", null),
+
+    saveUsers() {
+        save("users", this.users);
     },
 
-    load(key, fallback = null) {
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : fallback;
+    saveSession() {
+        save("session", this.session);
+    },
+
+    /* --------------------------
+       Criar novo usuário
+    -------------------------- */
+    createUser(name) {
+        this.users[name] = {
+            name,
+            avatar: "logo.png",
+            xp: 0,
+            streak: 0,
+            lessonsUnlocked: 1,
+            questionnaireDone: false,
+            friends: [],
+            requests: [],
+            nameChanges: 0
+        };
+
+        this.saveUsers();
+        this.session = this.users[name];
+        this.saveSession();
+    },
+
+    /* --------------------------
+       Verificar se existe
+    -------------------------- */
+    exists(name) {
+        return !!this.users[name];
+    },
+
+    /* --------------------------
+       Login
+    -------------------------- */
+    login(name) {
+        if (!this.users[name]) return false;
+        this.session = this.users[name];
+        this.saveSession();
+        return true;
+    },
+
+    /* --------------------------
+       Logout
+    -------------------------- */
+    logout() {
+        this.session = null;
+        this.saveSession();
+    },
+
+    /* --------------------------
+       Reset total (opcional)
+    -------------------------- */
+    reset() {
+        localStorage.clear();
+        this.users = {};
+        this.session = null;
     }
-};
-
-
-/* ------------------------------
-   Usuários e Sessão
------------------------------- */
-
-// Todos os usuários registrados
-let USERS = Store.load("users", {});
-
-// Usuário logado atualmente
-let SESSION = Store.load("currentUser", null);
-
-
-/* ------------------------------
-   Funções essenciais
------------------------------- */
-
-function saveSession() {
-    Store.save("currentUser", SESSION);
-}
-
-function saveUsers() {
-    Store.save("users", USERS);
-}
-
-function getUser(name) {
-    return USERS[name] || null;
-}
-
-function isLogged() {
-    return SESSION !== null;
-}
-
-
-/* ============================================================
-   LOGIN
-============================================================ */
-
-function loginUser(username) {
-    if (!USERS[username]) return false;
-
-    SESSION = USERS[username];
-    saveSession();
-    return true;
-}
-
-
-/* ============================================================
-   REGISTRO
-============================================================ */
-
-function registerUser(username) {
-
-    // Bloquear nomes repetidos
-    if (USERS[username]) return false;
-
-    USERS[username] = {
-        name: username,
-        avatar: "logo.png",
-        xp: 0,
-        streak: 0,
-        lessonsUnlocked: 1,
-        questionnaireDone: false,
-        friends: [],
-        requests: [],
-        nameChanges: 0
-    };
-
-    saveUsers();
-
-    SESSION = USERS[username];
-    saveSession();
-
-    return true;
-}
-
-
-/* ============================================================
-   LOGOUT
-============================================================ */
-
-function logout() {
-    SESSION = null;
-    Store.save("currentUser", null);
-    window.location.href = "auth.html";
-}
-
-
-/* ============================================================
-   PROGRESSO DE AULAS
-============================================================ */
-
-function addXP(amount) {
-    if (!SESSION) return;
-
-    SESSION.xp += amount;
-    USERS[SESSION.name] = SESSION;
-
-    saveSession();
-    saveUsers();
-}
-
-function unlockLesson(n) {
-    if (!SESSION) return;
-
-    SESSION.lessonsUnlocked = Math.max(SESSION.lessonsUnlocked, n);
-    USERS[SESSION.name] = SESSION;
-
-    saveSession();
-    saveUsers();
-}
-
-
-/* ============================================================
-   AMIGOS
-============================================================ */
-
-function sendFriendRequest(toUser) {
-    if (!SESSION) return false;
-    if (!USERS[toUser]) return false;
-
-    let target = USERS[toUser];
-    target.requests = target.requests || [];
-
-    if (!target.requests.includes(SESSION.name)) {
-        target.requests.push(SESSION.name);
-        saveUsers();
-    }
-
-    return true;
-}
-
-function acceptFriendRequest(fromUser) {
-    if (!SESSION) return false;
-
-    SESSION.requests = SESSION.requests.filter(r => r !== fromUser);
-    SESSION.friends.push(fromUser);
-
-    USERS[fromUser].friends.push(SESSION.name);
-
-    saveSession();
-    saveUsers();
-}
-
-
-/* ============================================================
-   NOME & AVATAR
-============================================================ */
-
-function updateAvatar(url) {
-    if (!SESSION) return false;
-
-    SESSION.avatar = url;
-    USERS[SESSION.name] = SESSION;
-
-    saveSession();
-    saveUsers();
-    return true;
-}
-
-function changeName(newName) {
-    if (!SESSION) return false;
-
-    // Nome já existe
-    if (USERS[newName]) return "exists";
-
-    // Limite de 3 trocas
-    if (SESSION.nameChanges >= 3) return "limit";
-
-    // Remover entrada antiga
-    delete USERS[SESSION.name];
-
-    SESSION.nameChanges++;
-    SESSION.name = newName;
-
-    USERS[newName] = SESSION;
-
-    saveSession();
-    saveUsers();
-
-    return true;
-}
-
-
-/* ============================================================
-   QUESTIONÁRIO
-============================================================ */
-
-function completeQuestionnaire() {
-    if (!SESSION) return;
-
-    SESSION.questionnaireDone = true;
-    USERS[SESSION.name] = SESSION;
-
-    saveSession();
-    saveUsers();
-}
-
-
-/* Expor funções globalmente */
-
-window.StorageEP = {
-    USERS,
-    SESSION,
-    loginUser,
-    registerUser,
-    logout,
-    addXP,
-    unlockLesson,
-    sendFriendRequest,
-    acceptFriendRequest,
-    updateAvatar,
-    changeName,
-    completeQuestionnaire
 };
