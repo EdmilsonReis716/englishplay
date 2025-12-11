@@ -1,165 +1,187 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Questionário Inicial — EnglishPlay</title>
+    <title>Questionário — EnglishPlay</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="estilo.css">
+
+    <style>
+        .quiz-container {
+            width: 650px;
+            margin: 140px auto;
+            background: #111;
+            border: 3px solid #ffcc00;
+            border-radius: 20px;
+            padding: 25px;
+        }
+
+        .quiz-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffcc00;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .quiz-question {
+            margin: 22px 0 10px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .option {
+            width: 100%;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 14px;
+            padding: 12px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .option:hover {
+            border-color: #ffcc00;
+            transform: scale(1.03);
+        }
+
+        .btn-finalizar {
+            margin-top: 25px;
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            background: #ffcc00;
+            color: black;
+            border-radius: 18px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
 <!-- NAVBAR -->
-<header class="navbar">
-    <div class="nav-logo" onclick="location.href='index.html'">
+<div class="navbar">
+    <div class="nav-left" onclick="location.href='index.html'">
         <img src="logo.png">
-        <span class="nav-title">EnglishPlay</span>
+        <div class="nav-title">EnglishPlay</div>
     </div>
 
-    <input type="text" class="search-box" placeholder="Pesquisar..." disabled>
+    <input type="text" class="search-box" disabled placeholder="Questionário">
 
-    <div class="nav-user" onclick="logout()">Sair</div>
-</header>
-
-<div class="main" style="justify-content:center; margin-top:130px;">
-    <div class="section-box" style="width:650px;">
-
-        <h2 class="section-title">📝 Questionário Inicial</h2>
-        <p style="opacity:0.8; margin-bottom:20px;">Responda para personalizarmos seu aprendizado.</p>
-
-        <img src="logo.png" style="width:120px; display:block; margin:0 auto 25px; animation:float 2s infinite ease-in-out;">
-
-        <!-- FORMULÁRIO -->
-        <div id="qForm">
-
-            <label>1. Onde você conheceu o EnglishPlay?</label>
-            <select id="q1" class="modal-box select">
-                <option>Instagram</option>
-                <option>TikTok</option>
-                <option>Facebook</option>
-                <option>Indicação de amigo</option>
-                <option>Outro</option>
-            </select>
-
-            <label>2. Seu nível de inglês atual?</label>
-            <select id="q2">
-                <option>Nenhum</option>
-                <option>Básico</option>
-                <option>Intermediário</option>
-                <option>Avançado</option>
-            </select>
-
-            <label>3. Quanto tempo pretende estudar por dia?</label>
-            <select id="q3">
-                <option>5 minutos</option>
-                <option>10 minutos</option>
-                <option>20 minutos</option>
-                <option>30 minutos</option>
-                <option>1 hora</option>
-            </select>
-
-            <label>4. Seu objetivo com inglês?</label>
-            <select id="q4">
-                <option>Conversação</option>
-                <option>Viagens</option>
-                <option>Trabalho</option>
-                <option>Escola/Faculdade</option>
-                <option>Hobby</option>
-            </select>
-
-            <label>5. Faixa etária</label>
-            <select id="q5">
-                <option>Menos de 13</option>
-                <option>13 a 17</option>
-                <option>18 a 24</option>
-                <option>25 a 35</option>
-                <option>36+</option>
-            </select>
-
-            <label>6. Quanto já estudou inglês?</label>
-            <select id="q6">
-                <option>Nada</option>
-                <option>Algumas semanas</option>
-                <option>Meses</option>
-                <option>Anos</option>
-            </select>
-
-            <label>7. Prefere aulas curtas ou longas?</label>
-            <select id="q7">
-                <option>Curta duração</option>
-                <option>Completa</option>
-            </select>
-
-            <label>8. Quer receber desafios semanais?</label>
-            <select id="q8">
-                <option>Sim</option>
-                <option>Não</option>
-            </select>
-
-            <label>9. Qual tipo de conteúdo você prefere?</label>
-            <select id="q9">
-                <option>Vocabulário</option>
-                <option>Gramática</option>
-                <option>Conversação</option>
-                <option>Listening</option>
-                <option>Writing</option>
-            </select>
-
-            <label>10. Qual sua meta final no EnglishPlay?</label>
-            <select id="q10">
-                <option>Falar inglês fluente</option>
-                <option>Melhorar escrita</option>
-                <option>Melhorar escuta</option>
-                <option>Passar em provas</option>
-                <option>Aprender por diversão</option>
-            </select>
-        </div>
-
-        <button class="btn-main" onclick="submitQuestionnaire()" style="margin-top:20px;">Finalizar</button>
-
-    </div>
+    <button class="btn-yellow" onclick="sair()">Sair</button>
 </div>
 
+<div class="quiz-container">
+
+    <div class="quiz-title">Questionário Inicial</div>
+
+    <!-- Perguntas -->
+    <div id="quizArea"></div>
+
+    <button class="btn-finalizar" onclick="finalizarQuiz()">Finalizar</button>
+</div>
+
+<script src="storage.js"></script>
+<script src="mascotes.js"></script>
 
 <script>
-/* =============================
-   PROTEÇÃO: Redirecionar caso
-   não esteja logado
-============================= */
+/* ============================================================
+   PERGUNTAS DO QUESTIONÁRIO
+============================================================ */
 
-let SESSION = JSON.parse(localStorage.getItem("session"));
+const perguntas = [
+    {
+        id: "origem",
+        texto: "Como você ficou sabendo do EnglishPlay?",
+        opcoes: [
+            "Instagram", "TikTok", "Amigos", "Pesquisa na internet", "Outro"
+        ]
+    },
+    {
+        id: "meta",
+        texto: "Qual sua meta diária?",
+        opcoes: [
+            "5 minutos", "10 minutos", "15 minutos", "30 minutos", "1 hora"
+        ]
+    },
+    {
+        id: "objetivo",
+        texto: "Por que você quer aprender inglês?",
+        opcoes: [
+            "Estudos", "Trabalho", "Viagens", "Hobby", "Outro"
+        ]
+    },
+    {
+        id: "nivel",
+        texto: "Quanto você entende de inglês?",
+        opcoes: [
+            "Nada", "Pouco", "Consigo entender o básico", "Converso bem", "Sou avançado"
+        ]
+    },
+    {
+        id: "motivacao",
+        texto: "O que mais te motiva a aprender?",
+        opcoes: [
+            "Melhor futuro", "Auto melhoria", "Pressão externa", "Diversão", "Quero ser fluente"
+        ]
+    }
+];
 
-if (!SESSION) {
-    window.location.href = "auth.html";
+let respostas = {};
+
+/* ========================================
+   GERAR O QUESTIONÁRIO NA TELA
+=========================================== */
+
+let area = document.getElementById("quizArea");
+
+perguntas.forEach(q => {
+    let bloco = document.createElement("div");
+
+    bloco.innerHTML = `
+        <div class="quiz-question">${q.texto}</div>
+    `;
+
+    q.opcoes.forEach(op => {
+        let opt = document.createElement("div");
+        opt.className = "option";
+        opt.textContent = op;
+
+        opt.onclick = () => {
+            respostas[q.id] = op;
+            mascoteFala("Resposta marcada!");
+        };
+
+        bloco.appendChild(opt);
+    });
+
+    area.appendChild(bloco);
+});
+
+/* ========================================
+   FINALIZAR QUESTIONÁRIO
+=========================================== */
+
+function finalizarQuiz() {
+    if (Object.keys(respostas).length < perguntas.length) {
+        alert("Responda todas as perguntas antes de finalizar.");
+        return;
+    }
+
+    saveQuestionario(respostas);
+
+    mascoteFala("Ótimo! Agora vamos começar!");
+
+    setTimeout(() => {
+        location.href = "index.html";
+    }, 1200);
 }
 
-/* =============================
-   Função de envio
-============================= */
-
-function submitQuestionnaire() {
-    let data = {
-        q1: q1.value,
-        q2: q2.value,
-        q3: q3.value,
-        q4: q4.value,
-        q5: q5.value,
-        q6: q6.value,
-        q7: q7.value,
-        q8: q8.value,
-        q9: q9.value,
-        q10: q10.value,
-    };
-
-    let USERS = JSON.parse(localStorage.getItem("users"));
-    USERS[SESSION.name].questionnaireDone = true;
-    USERS[SESSION.name].questionnaire = data;
-
-    localStorage.setItem("users", JSON.stringify(USERS));
-
-    alert("Questionário concluído!");
-
-    window.location.href = "index.html";
+function sair() {
+    logout();
 }
 </script>
 
