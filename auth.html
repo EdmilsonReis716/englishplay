@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entrar — EnglishPlay</title>
+
+    <link rel="stylesheet" href="style.css" />
+    <script src="storage.js" defer></script>
+    <script src="script.js" defer></script>
+
+    <style>
+        .auth-container {
+            max-width: 480px;
+            margin: 130px auto;
+            background: #111;
+            padding: 35px;
+            border-radius: 20px;
+            border: 3px solid #ffcc00;
+            animation: fadeIn .4s ease;
+        }
+
+        .auth-title {
+            color: #ffcc00;
+            font-size: 32px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .auth-box {
+            margin-bottom: 20px;
+        }
+
+        .auth-box label {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 6px;
+            border-radius: 12px;
+            background: #1b1b1b;
+            color: white;
+            border: 2px solid #333;
+            font-size: 15px;
+        }
+
+        .mascot-auth {
+            width: 150px;
+            display: block;
+            margin: 0 auto 20px auto;
+            animation: float 2.2s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="navbar">
+    <div class="navbar-left">
+        <img src="logo.png" class="nav-logo" />
+        <span class="nav-title">EnglishPlay</span>
+    </div>
+
+    <div class="navbar-right">
+        <button onclick="window.location.href='index.html'" class="btn-logout">Voltar</button>
+    </div>
+</header>
+
+<div class="auth-container">
+
+    <img src="logo.png" class="mascot-auth">
+
+    <h1 class="auth-title">Entre ou Crie sua Conta</h1>
+
+    <!-- LOGIN -->
+    <div class="auth-box">
+        <label>Nome de usuário</label>
+        <input id="loginName" class="auth-input" placeholder="Ex: Joao123">
+    </div>
+
+    <button class="btn-main" onclick="login()">Entrar</button>
+
+    <hr style="margin: 25px 0; border-color:#333">
+
+    <!-- REGISTRO -->
+    <div class="auth-box">
+        <label>Criar novo usuário</label>
+        <input id="registerName" class="auth-input" placeholder="Digite seu nome único">
+    </div>
+
+    <button class="btn-main" onclick="register()">Criar conta</button>
+
+</div>
+
+</body>
+</html>
