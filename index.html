@@ -1,51 +1,117 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>EnglishPlay</title>
-  <link rel="icon" href="logo.png">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnglishPlay</title>
+
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
 
-  <!-- OVERLAY (fundo do modal) -->
-  <div id="overlay" class="hidden overlay"></div>
+<body class="page fade-in">
 
-  <!-- NAVBAR -->
-  <header class="navbar">
-    <div class="nav-left">
-      <img src="logo.png" class="logo-small" />
-      <div>
-        <div class="brand">EnglishPlay</div>
-        <div class="subtitle">Seu portal de estudos</div>
-      </div>
-      <div class="flame"></div>
-    </div>
-
-    <div class="nav-middle">
-      <input id="searchUsers" placeholder="Pesquisar usuários..." />
-      <div id="searchResults" class="search-results hidden"></div>
-    </div>
-
-    <div id="userArea" class="nav-right"></div>
-  </header>
-
-  <!-- LAYOUT PRINCIPAL -->
-  <main class="container">
-    <aside id="sidebar" class="sidebar card"></aside>
-
-    <section class="content">
-
-      <div class="card top-controls">
-        <div>
-          <button id="btnCreate" class="btn rounded">Criar Conta</button>
-          <button id="btnLogin" class="btn rounded ghost">Entrar</button>
+    <!-- NAVBAR -->
+    <header class="navbar">
+        <div class="nav-left">
+            <img src="logo.png" class="logo-small" />
+            <div class="brand-area">
+                <h1 class="brand">EnglishPlay</h1>
+                <span class="subtitle">Seu portal de estudos</span>
+            </div>
         </div>
 
-        <select id="viewFilter" class="pill">
-          <option value="all">Todas as aulas</option>
-          <option value="locked">Bloqueadas</option>
-          <option value="done"
+        <div class="nav-middle">
+            <input id="searchUsers" placeholder="Pesquisar usuários..." />
+            <div id="searchResults" class="search-results hidden"></div>
+        </div>
 
-  
+        <div id="userArea" class="nav-right"></div>
+    </header>
+
+    <!-- LAYOUT PRINCIPAL -->
+    <main class="main-layout">
+
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="sidebar card"></aside>
+
+        <!-- SEÇÕES DE AULA -->
+        <section class="sessions-area" id="sessionsArea">
+
+            <!-- GERADO PELO SCRIPT -->
+        </section>
+
+    </main>
+
+    <!-- MODAIS (LOGIN, QUESTIONÁRIO, PAGAMENTO) -->
+    <div id="overlay" class="overlay hidden"></div>
+
+    <!-- AUTH MODAL -->
+    <div id="authModal" class="modal hidden">
+        <div class="modal-card scale-in">
+            <h2>Entrar / Cadastrar</h2>
+
+            <input id="authUser" placeholder="Nome de usuário" />
+            <input id="authPass" type="password" placeholder="Senha" />
+
+            <div class="row">
+                <button id="authLoginBtn" class="btn">Entrar</button>
+                <button id="authRegisterBtn" class="btn ghost">Cadastrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUESTIONÁRIO -->
+    <div id="questionModal" class="modal hidden">
+        <div class="modal-card scale-in">
+            <h2>Questionário</h2>
+
+            <label>Como ficou sabendo do EnglishPlay?</label>
+            <select id="q_source">
+                <option>Instagram</option>
+                <option>TikTok</option>
+                <option>Amigos</option>
+                <option>Outro</option>
+            </select>
+
+            <label>Meta diária</label>
+            <select id="q_days">
+                <option value="3">3 dias</option>
+                <option value="7" selected>7 dias</option>
+                <option value="14">14 dias</option>
+                <option value="30">30 dias</option>
+            </select>
+
+            <label>Objetivo</label>
+            <select id="q_reason">
+                <option>Estudos</option>
+                <option>Trabalho</option>
+                <option>Viagem</option>
+                <option>Lazer</option>
+            </select>
+
+            <label>Nível atual</label>
+            <div class="radio-row">
+                <label><input type="radio" name="q_level" value="nada" checked> Nada</label>
+                <label><input type="radio" name="q_level" value="pouco"> Pouco</label>
+                <label><input type="radio" name="q_level" value="basico"> Básico</label>
+                <label><input type="radio" name="q_level" value="fluente"> Fluente</label>
+            </div>
+
+            <button id="finishQuestion" class="btn">Finalizar</button>
+        </div>
+    </div>
+
+    <!-- PAGAMENTO MODAL -->
+    <div id="paymentModal" class="modal hidden">
+        <div class="modal-card scale-in">
+            <h2>Desbloquear Sessão</h2>
+            <p>Para continuar sua jornada, desbloqueie esta sessão.</p>
+
+            <button id="simulatePayBtn" class="btn">Desbloquear</button>
+            <button id="closePayBtn" class="btn ghost">Cancelar</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
