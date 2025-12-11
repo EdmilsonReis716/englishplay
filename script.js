@@ -288,6 +288,21 @@ renderUserArea();
 renderSidebar();
 renderSessions();
 
-/* ============================================================
-   FIM DO SCRIPT
-   ============================================================ */
+// BOTÃO FINALIZAR QUESTIONÁRIO
+document.getElementById("finishQuestion").addEventListener("click", () => {
+    const source = document.getElementById("q_source").value;
+    const days = document.getElementById("q_days").value;
+    const reason = document.getElementById("q_reason").value;
+    const level = document.querySelector("input[name='q_level']:checked").value;
+
+    const user = getCurrentUser();
+    if (!user) return alert("Erro: sem usuário logado.");
+
+    user.questionnaire = { source, days, reason, level };
+    saveUser(user);
+
+    closeModal("questionModal");
+    loadHomeScreen();
+
+    alert("Questionário concluído! 🎉");
+});
