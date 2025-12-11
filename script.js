@@ -1,308 +1,234 @@
-/* ============================================================
-   ENGLISHPLAY — SCRIPT FINAL SEM BUGS (2025)
-   ============================================================ */
+/* script.js — EnglishPlay (all-in-one front-end engine) */
 
-function $(id){ return document.getElementById(id); }
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const now = () => Date.now();
 
-/* ============================================================
-   BANCO DE DADOS LOCAL
-   ============================================================ */
+function dbLoad(){ try{ return JSON.parse(localStorage.getItem('englishplay_db')) || { users: [] }; } catch(e){ return { users: [] }; } }
+function dbSave(db){ localStorage.setItem('englishplay_db', JSON.stringify(db)); }
+function sessionLoad(){ try{ return JSON.parse(localStorage.getItem('englishplay_session')); } catch(e){ return null; } }
+function sessionSave(s){ localStorage.setItem('englishplay_session', JSON.stringify(s)); }
 
-function dbLoad(){
-    try { return JSON.parse(localStorage.getItem("englishplay_db")) || { users:[] }; }
-    catch { return { users:[] }; }
-}
+/* ---------- App state ---------- */
+let DB = dbLoad();
+let session = sessionLoad();
 
-function dbSave(db){ localStorage.setItem("englishplay_db", JSON.stringify(db)); }
+/* ---------- UI references ---------- */
+const authModal = $('authModal');
+const overlay = $('overlay');
+const navRight = $('navRight');
+const sidebar = $('sidebar');
+const sessionsArea = $('sessionsArea');
+const searchUsers = $('searchUsers');
+const searchResults = $('searchResults');
+const pixModal = $('pixModal');
+const pixKeyEl = $('pixKey');
 
-function getSession(){
-    try { return JSON.parse(localStorage.getItem("englishplay_session")); }
-    catch { return null; }
-}
+/* ---------- Helpers UI ---------- */
+function openModal(el){ overlay.classList.remove('hidden'); el.classList.remove('hidden'); }
+function closeAll(){ document.querySelectorAll('.modal').forEach(m=>m.classList.add('hidden')); overlay.classList.add('hidden'); }
+function toast(msg){ alert(msg); } // simple for now
 
-function setSession(s){ localStorage.setItem("englishplay_session", JSON.stringify(s)); }
-
-
-let db = dbLoad();
-let session = getSession();
-
-/* ============================================================
-   UI HELPERS
-   ============================================================ */
-
-function closeAllModals(){
-    document.querySelectorAll(".modal").forEach(m => m.classList.add("hidden"));
-    $("overlay").classList.add("hidden");
-}
-
-function openModal(id){
-    closeAllModals();
-    $("overlay").classList.remove("hidden");
-    $(id).classList.remove("hidden");
-}
-
-function renderUserArea(){
-    const ua = $("userArea");
-
-    if(!session){
-        ua.innerHTML = `<button onclick="openModal('authModal')">Entrar</button>`;
-        return;
-    }
-
-    ua.innerHTML = `
-        <button onclick="logout()">Sair</button>
-    `;
+/* ---------- Render nav / sidebar ---------- */
+function renderNav(){
+  const right = $('navRight');
+  if(!session){
+    right.innerHTML = `<button id="openAuthBtn" class="btn ghost">Entrar / Criar</button>`;
+    $('openAuthBtn').onclick = ()=> openModal(authModal);
+  } else {
+    right.innerHTML = `<button id="profileBtn" class="btn ghost">${session.username}</button>`;
+    $('profileBtn').onclick = ()=> window.location.href='profile.html';
+  }
 }
 
 function renderSidebar(){
-    const sb = $("sidebar");
-    if(!session){
-        sb.innerHTML = `
-            <img src="logo.png" class="profile-avatar">
-            <h3 style="color:var(--yellow)">Visitante</h3>
-            <p>Faça login para ver seu progresso.</p>
-        `;
-        return;
-    }
-
-    sb.innerHTML = `
-        <img src="logo.png" class="profile-avatar">
-        <h3>${session.username}</h3>
-        <p style="color:var(--yellow)">🔥 ${session.streak || 0} dias</p>
-        <p style="color:var(--accent)">⭐ ${session.xp || 0} XP</p>
-    `;
+  sidebar.innerHTML = '';
+  const box = document.createElement('div');
+  box.className='card';
+  box.style.padding='12px';
+  const avatar = session ? session.avatar || 'logo.png' : 'logo.png';
+  box.innerHTML = `
+    <img src="${avatar}" class="profile-avatar" />
+    <h3 style="text-align:center;margin:6px 0">${session ? session.username : 'Visitante'}</h3>
+    <p style="text-align:center;color:var(--yellow)">🔥 ${session ? session.streak||0 : 0} dias</p>
+    <p style="text-align:center;color:var(--accent)">⭐ ${session ? session.xp||0 : 0} XP</p>
+    <div style="margin-top:12px;text-align:center">
+      <button class="btn ghost" id="openProfileBtn">Perfil</button>
+    </div>
+  `;
+  sidebar.appendChild(box);
+  $('openProfileBtn').onclick = ()=> window.location.href='profile.html';
 }
 
-/* ============================================================
-   LOGIN + CADASTRO
-   ============================================================ */
-
-$("authLoginBtn").onclick = () => {
-    const user = $("authUser").value.trim();
-    const pass = $("authPass").value.trim();
-
-    const found = db.users.find(u => u.username === user && u.pass === pass);
-
-    if(!found){
-        alert("Usuário ou senha incorretos");
-        return;
-    }
-
-    session = found;
-    setSession(found);
-    closeAllModals();
-    renderUserArea();
-    renderSidebar();
-    renderSessions();
-};
-
-$("authRegisterBtn").onclick = () => {
-    const user = $("authUser").value.trim();
-    const pass = $("authPass").value.trim();
-
-    if(user.length < 3) return alert("Nome muito curto");
-    if(pass.length < 3) return alert("Senha muito curta");
-
-    if(db.users.find(u => u.username === user)){
-        alert("Este nome já existe!");
-        return;
-    }
-
-    const newUser = {
-        id: Date.now(),
-        username: user,
-        pass: pass,
-        streak: 0,
-        xp: 0,
-        completed: [],
-        questionnaire: null
-    };
-
-    db.users.push(newUser);
-    dbSave(db);
-
-    session = newUser;
-    setSession(newUser);
-
-    closeAllModals();
-    openModal("questionModal"); // CORRIGIDO: só abre ele
-};
-
-function logout(){
-    session = null;
-    localStorage.removeItem("englishplay_session");
-    renderUserArea();
-    renderSidebar();
-    renderSessions();
-}
-
-/* ============================================================
-   QUESTIONÁRIO
-   ============================================================ */
-
-$("finishQuestion").onclick = () => {
-    if(!session) return;
-
-    session.questionnaire = {
-        source: $("q_source").value,
-        days: $("q_days").value,
-        reason: $("q_reason").value,
-        level: [...document.getElementsByName("q_level")].find(r=>r.checked).value
-    };
-
-    const i = db.users.findIndex(u => u.id === session.id);
-    db.users[i] = session;
-    dbSave(db);
-
-    closeAllModals();
-    renderSessions();
-};
-
-/* ============================================================
-   SESSÕES DE AULA (10 × 20)
-   ============================================================ */
-
+/* ---------- Sessions / lessons generation ---------- */
 const SESSION_INFO = [
-    { icon:"⭐", title:"Fundamentos" },
-    { icon:"📘", title:"Vocabulário Básico" },
-    { icon:"🔤", title:"Gramática Inicial" },
-    { icon:"🎧", title:"Listening" },
-    { icon:"✍", title:"Writing" },
-    { icon:"💬", title:"Conversação" },
-    { icon:"🚀", title:"Intermediário" },
-    { icon:"🔥", title:"Intermediário Avançado" },
-    { icon:"🎯", title:"Pré-Fluência" },
-    { icon:"👑", title:"Domínio do Inglês" },
+  {icon:'⭐', title:'Fundamentos'},
+  {icon:'📘', title:'Vocabulário Básico'},
+  {icon:'🔤', title:'Gramática Inicial'},
+  {icon:'🎧', title:'Listening'},
+  {icon:'✍', title:'Writing'},
+  {icon:'💬', title:'Conversação'},
+  {icon:'🚀', title:'Intermediário'},
+  {icon:'🔥', title:'Intermediário Avançado'},
+  {icon:'🎯', title:'Pré-Fluência'},
+  {icon:'👑', title:'Domínio do Inglês'}
 ];
 
-/* ============================================================
-   GERA TODAS AS SESSÕES
-   ============================================================ */
-
 function renderSessions(){
-    const area = $("sessionsArea");
-    area.innerHTML = "";
-
-    let lessonNum = 1;
-
-    for(let s = 0; s < 10; s++){
-        const card = document.createElement("div");
-        card.className = "session-card";
-
-        card.innerHTML = `
-            <h2 class="session-title">
-                <span class="icon">${SESSION_INFO[s].icon}</span>
-                Sessão ${s+1} — ${SESSION_INFO[s].title}
-            </h2>
-
-            <div class="lesson-tree" id="tree${s}"></div>
-        `;
-
-        area.appendChild(card);
-
-        const tree = card.querySelector(".lesson-tree");
-
-        for(let i = 0; i < 20; i++){
-            const row = document.createElement("div");
-            row.className = "lesson-row";
-
-            const circle = document.createElement("div");
-            circle.className = "lesson-circle";
-            circle.textContent = lessonNum;
-
-            const unlocked =
-                session &&
-                (lessonNum === 1 || session.completed.includes(lessonNum - 1));
-
-            if(!unlocked){
-                circle.classList.add("lesson-locked");
-                circle.innerHTML = "🔒";
-            }
-
-            if(session && session.completed.includes(lessonNum)){
-                circle.classList.add("lesson-done");
-                circle.innerHTML = "✔";
-            }
-
-            circle.onclick = () => {
-                if(circle.classList.contains("lesson-locked")) return;
-                goToLesson(lessonNum);
-            };
-
-            row.appendChild(circle);
-            tree.appendChild(row);
-
-            lessonNum++;
+  sessionsArea.innerHTML = '';
+  let lessonNum = 1;
+  for(let s=0;s<10;s++){
+    const card = document.createElement('div');
+    card.className='session-card';
+    card.innerHTML = `<div class="session-title"><span>${SESSION_INFO[s].icon}</span> Sessão ${s+1} — ${SESSION_INFO[s].title}</div><div id="tree-${s}" class="lesson-tree"></div>`;
+    sessionsArea.appendChild(card);
+    const tree = $(`tree-${s}`);
+    for(let i=0;i<20;i++){
+      const circle = document.createElement('div');
+      circle.className='lesson-circle';
+      circle.textContent = lessonNum;
+      const unlocked = session && (lessonNum===1 || session.completed?.includes(lessonNum-1));
+      if(!unlocked){ circle.classList.add('lesson-locked'); circle.innerHTML='🔒'; }
+      if(session && session.completed && session.completed.includes(lessonNum)){ circle.classList.add('lesson-done'); circle.innerHTML='✔'; }
+      circle.onclick = () => {
+        if(circle.classList.contains('lesson-locked')) {
+          // open PIX unlock flow for the whole session: ask to unlock session s
+          if(!session){ toast('Faça login para desbloquear.'); return; }
+          openPixModalForSession(s);
+          return;
         }
+        // go to lesson page
+        pageTransition(`lesson.html?id=${lessonNum}`);
+      };
+      tree.appendChild(circle);
+      lessonNum++;
     }
+  }
 }
 
-/* ============================================================
-   TRANSIÇÃO PARA A AULA
-   ============================================================ */
-
-function goToLesson(id){
-    document.body.classList.add("fade-out");
-    setTimeout(() => {
-        window.location.href = `lesson.html?id=${id}`;
-    }, 250);
+/* ---------- PIX flow (manual) ---------- */
+let _unlockSessionTarget = null;
+function openPixModalForSession(sessionIndex){
+  _unlockSessionTarget = sessionIndex;
+  openModal(pixModal);
+  // set pix key shown
+  const example = "00020126580014BR.GOV.BCB.PIX0136d9b1e552-e431-4d8b-b28e-eca5cddf654252040000530398654040.995802BR5922Edmilson...";
+  pixKeyEl.textContent = example;
+}
+function copyPixKey(){
+  navigator.clipboard?.writeText(pixKeyEl.textContent).then(()=>toast('PIX copiado.'));
+}
+function confirmPixPayment(){
+  // manual confirm: unlock all lessons in session _unlockSessionTarget
+  if(_unlockSessionTarget === null){ toast('Erro'); return; }
+  const start = _unlockSessionTarget*20 + 1;
+  const end = start + 19;
+  // mark as unlocked by setting an "unlockedSessions" array in session
+  session.unlockedSessions = session.unlockedSessions || [];
+  session.unlockedSessions.push(_unlockSessionTarget);
+  session.unlockedSessions = [...new Set(session.unlockedSessions)];
+  // unlock lessons in DB? We'll allow unlockedSessions to bypass lock
+  sessionSave(session);
+  // close
+  closeAll();
+  renderSessions();
+  toast('Sessão desbloqueada manualmente. Agora você pode acessar as aulas.');
 }
 
-/* Fade-out style injection */
-const style = document.createElement("style");
-style.innerHTML = `
-.fade-out {
-    opacity: 0;
-    transition: opacity .25s ease-in-out;
+/* ---------- Friends system ---------- */
+function addFriend(username){
+  if(!session){ toast('Faça login'); return; }
+  const target = DB.users.find(u => u.username === username);
+  if(!target){ toast('Usuário não encontrado'); return; }
+  // send request: push to target.requests
+  target.requests = target.requests || [];
+  if(target.requests.includes(session.username)){ toast('Pedido já enviado'); return; }
+  target.requests.push(session.username);
+  dbSave(DB);
+  toast('Pedido de amizade enviado.');
 }
-`;
-document.head.appendChild(style);
+function acceptFriendRequest(fromUsername){
+  if(!session) return;
+  // add to session.friends
+  session.friends = session.friends || [];
+  session.friends.push(fromUsername);
+  session.friends = [...new Set(session.friends)];
+  // remove request
+  const idx = DB.users.findIndex(u=>u.id===session.id);
+  if(idx>=0) DB.users[idx] = session;
+  // add session to other user's friends
+  const other = DB.users.find(u=>u.username===fromUsername);
+  if(other){
+    other.friends = other.friends || [];
+    other.friends.push(session.username);
+  }
+  dbSave(DB);
+  sessionSave(session);
+  renderSidebar();
+  toast('Amizade aceita.');
+}
 
-/* ============================================================
-   PESQUISA DE USUÁRIOS
-   ============================================================ */
-
-$("searchUsers").oninput = () => {
-    const text = $("searchUsers").value.trim().toLowerCase();
-    const box = $("searchResults");
-
-    if(text.length === 0){
-        box.classList.add("hidden");
-        return;
-    }
-
-    const filtered = db.users.filter(u => u.username.toLowerCase().includes(text));
-
-    box.innerHTML = filtered.map(u=>`
-        <div style="padding:8px;border-bottom:1px solid #222;">${u.username}</div>
-    `).join("");
-
-    box.classList.remove("hidden");
+/* ---------- Auth / Register / Questionnaire redirect ---------- */
+$('authRegisterBtn').onclick = () => {
+  const user = $('authUser').value.trim();
+  const pass = $('authPass').value.trim();
+  if(user.length < 3) return toast('Nome muito curto');
+  if(pass.length < 3) return toast('Senha muito curta');
+  if(DB.users.find(u=>u.username===user)) return toast('Nome já existe');
+  const newUser = { id: now(), username:user, pass:pass, completed:[], streak:0, xp:0, friends:[], requests:[], unlockedSessions:[] };
+  DB.users.push(newUser);
+  dbSave(DB);
+  session = newUser; sessionSave(session);
+  closeAll();
+  // go to questionnaire page (separate)
+  window.location.href = 'questionnaire.html';
 };
 
-/* ============================================================
-   INICIALIZAÇÃO
-   ============================================================ */
+$('authLoginBtn').onclick = () => {
+  const user = $('authUser').value.trim();
+  const pass = $('authPass').value.trim();
+  const found = DB.users.find(u=>u.username===user && u.pass===pass);
+  if(!found) return toast('Usuário ou senha incorretos');
+  session = found; sessionSave(session);
+  closeAll();
+  renderNav(); renderSidebar(); renderSessions();
+};
 
-renderUserArea();
-renderSidebar();
-renderSessions();
+/* close modal */
+$('authClose').onclick = closeAll;
+$('overlay').onclick = closeAll;
 
-// BOTÃO FINALIZAR QUESTIONÁRIO
-document.getElementById("finishQuestion").addEventListener("click", () => {
-    const source = document.getElementById("q_source").value;
-    const days = document.getElementById("q_days").value;
-    const reason = document.getElementById("q_reason").value;
-    const level = document.querySelector("input[name='q_level']:checked").value;
+/* PIX modal buttons */
+$('copyPix').onclick = copyPixKey;
+$('confirmPix').onclick = confirmPixPayment;
+$('closePix').onclick = closeAll;
 
-    const user = getCurrentUser();
-    if (!user) return alert("Erro: sem usuário logado.");
+/* search users */
+searchUsers.oninput = () => {
+  const q = searchUsers.value.trim().toLowerCase();
+  if(!q){ searchResults.classList.add('hidden'); return; }
+  const filtered = DB.users.filter(u=>u.username.toLowerCase().includes(q)).slice(0,8);
+  searchResults.innerHTML = filtered.map(u=>`<div class="sres"><b>${u.username}</b> <button class="btn ghost" onclick="addFriend('${u.username}')">Adicionar</button></div>`).join('');
+  searchResults.classList.remove('hidden');
+};
 
-    user.questionnaire = { source, days, reason, level };
-    saveUser(user);
+/* page transition helper */
+function pageTransition(href){
+  document.body.style.opacity = '0';
+  setTimeout(()=> window.location.href = href, 240);
+}
 
-    closeModal("questionModal");
-    loadHomeScreen();
+/* ---------- Initialization ---------- */
+function init(){
+  DB = dbLoad();
+  session = sessionLoad();
+  renderNav();
+  renderSidebar();
+  renderSessions();
+}
+init();
 
-    alert("Questionário concluído! 🎉");
-});
+/* expose some helpers for console */
+window._EP = { DB, session, addFriend, acceptFriendRequest, renderSessions };
+
+// End of script.js
