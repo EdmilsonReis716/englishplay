@@ -1,246 +1,283 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aula — EnglishPlay</title>
+    <title>Lição — EnglishPlay</title>
 
-    <link rel="stylesheet" href="style.css">
-    <script src="lessons.js" defer></script>
+    <link rel="stylesheet" href="estilo.css">
+
+    <style>
+        .lesson-container {
+            width: 650px;
+            background: #111;
+            padding: 25px;
+            border-radius: 20px;
+            border: 3px solid #ffcc00;
+            margin: 130px auto;
+        }
+
+        .question {
+            font-size: 22px;
+            margin-bottom: 25px;
+            color: #ffcc00;
+            font-weight: 600;
+        }
+
+        .choice {
+            width: 100%;
+            padding: 14px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            border: 2px solid #333;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .choice:hover {
+            border-color: #ffcc00;
+            transform: scale(1.03);
+        }
+
+        .write-box {
+            width: 100%;
+            padding: 14px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+        }
+
+        .drag-area {
+            margin-top: 18px;
+            padding: 12px;
+            background: #0b0b0b;
+            border: 2px dashed #444;
+            border-radius: 15px;
+            min-height: 70px;
+        }
+
+        .word {
+            display: inline-block;
+            background: #ffcc00;
+            color: black;
+            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 18px;
+            cursor: grab;
+            margin: 6px;
+        }
+
+        .next-btn {
+            width: 100%;
+            margin-top: 18px;
+            padding: 13px;
+            background: #ffcc00;
+            border-radius: 15px;
+            font-weight: 700;
+            color: black;
+            cursor: pointer;
+        }
+
+        .progress {
+            margin-bottom: 12px;
+            color: #ffcc00;
+        }
+
+        #feedback {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
 
 <!-- NAVBAR -->
-<header class="navbar">
-    <div class="nav-logo" onclick="location.href='index.html'">
+<div class="navbar">
+    <div class="nav-left" onclick="location.href='index.html'">
         <img src="logo.png">
-        <span class="nav-title">EnglishPlay</span>
+        <div class="nav-title">EnglishPlay</div>
     </div>
 
-    <input type="text" class="search-box" placeholder="Pesquisar..." disabled>
+    <input type="text" disabled class="search-box" placeholder="Lição atual">
 
-    <div class="nav-user" onclick="logout()">Sair</div>
-</header>
-
-<!-- CONTEÚDO DA AULA -->
-<div class="main" style="justify-content:center; margin-top:130px;">
-    <div class="section-box" style="width:700px;">
-
-        <h2 id="lessonTitle" class="section-title">Carregando...</h2>
-
-        <!-- Barra de progresso -->
-        <div class="progress-bar" style="
-            width:100%; 
-            background:#222; 
-            height:12px; 
-            border-radius:10px; 
-            margin:20px 0;
-        ">
-            <div id="progressFill" style="
-                width:0%; 
-                height:100%; 
-                border-radius:10px; 
-                background:linear-gradient(to right, #ffcc00, #ffee88);
-                transition:0.4s ease;
-            "></div>
-        </div>
-
-        <!-- CAIXA DA AULA -->
-        <div id="lessonBlock" class="lesson-block">
-            Carregando exercícios...
-        </div>
-
-    </div>
+    <button class="btn-yellow" onclick="sair()">Sair</button>
 </div>
 
+<div class="lesson-container">
+    <div class="progress" id="progressText">Carregando...</div>
+    <div class="question" id="questionText">...</div>
+
+    <!-- Múltipla escolha -->
+    <div id="choicesBox"></div>
+
+    <!-- Escrita -->
+    <input id="writeInput" class="write-box" style="display:none" placeholder="Digite aqui...">
+
+    <!-- Montar frase -->
+    <div id="dragWords"></div>
+    <div id="dragArea" class="drag-area"></div>
+
+    <div id="feedback"></div>
+
+    <button class="next-btn" onclick="nextQuestion()">Continuar</button>
+</div>
+
+<script src="storage.js"></script>
+<script src="lições.js"></script>
+<script src="mascotes.js"></script>
 
 <script>
-/* ============================================================
-   CARREGAR SESSÃO E USUÁRIO
-============================================================ */
+/* =====================================================
+    CARREGAR LIÇÃO
+===================================================== */
 
-let SESSION = JSON.parse(localStorage.getItem("session"));
-let USERS = JSON.parse(localStorage.getItem("users")) || {};
-
-if (!SESSION) {
-    alert("Você precisa estar logado!");
-    window.location.href = "auth.html";
-}
-
-const params = new URLSearchParams(window.location.search);
-const lessonId = Number(params.get("id"));
-
+let lessonId = localStorage.getItem("lessonOpen");
 if (!lessonId) {
-    alert("Aula inválida.");
-    window.location.href = "index.html";
+    alert("Erro: nenhuma lição selecionada.");
+    location.href = "index.html";
 }
 
-document.getElementById("lessonTitle").innerText = "Lição " + lessonId;
+let exercicios = getLesson(lessonId); 
+let indexEx = 0;
+let total = exercicios.length;
 
+let answerLocked = false;
 
-/* ============================================================
-   SISTEMA DE AULA (5 exercícios)
-============================================================ */
+const qText = document.getElementById("questionText");
+const cBox = document.getElementById("choicesBox");
+const wInput = document.getElementById("writeInput");
+const dragWords = document.getElementById("dragWords");
+const dragArea = document.getElementById("dragArea");
+const feedback = document.getElementById("feedback");
+const progressText = document.getElementById("progressText");
 
-let index = 0;
-const total = 5;
+/* =====================================================
+    MOSTRAR EXERCÍCIO
+===================================================== */
 
-/* Atualizar barra de progresso */
-function updateProgress() {
-    document.getElementById("progressFill").style.width = (index / total * 100) + "%";
+function showExercise() {
+    answerLocked = false;
+    feedback.textContent = "";
+    dragArea.innerHTML = "";
+    dragWords.innerHTML = "";
+    wInput.value = "";
+
+    let ex = exercicios[indexEx];
+
+    progressText.textContent = `Exercício ${indexEx + 1} de ${total}`;
+    qText.textContent = ex.question;
+
+    cBox.innerHTML = "";
+    wInput.style.display = "none";
+    dragArea.style.display = "none";
+    dragWords.style.display = "none";
+
+    if (ex.type === "choice") {
+        ex.options.forEach(opt => {
+            let btn = document.createElement("div");
+            btn.className = "choice";
+            btn.textContent = opt;
+
+            btn.onclick = () => checkAnswer(opt);
+            cBox.appendChild(btn);
+        });
+    }
+
+    if (ex.type === "write") {
+        wInput.style.display = "block";
+        wInput.oninput = () => checkWrite();
+    }
+
+    if (ex.type === "drag") {
+        dragArea.style.display = "block";
+        dragWords.style.display = "block";
+
+        ex.words.sort(() => Math.random() - 0.5);
+
+        ex.words.forEach(w => {
+            let el = document.createElement("span");
+            el.className = "word";
+            el.textContent = w;
+
+            el.onclick = () => {
+                dragArea.textContent += w + " ";
+            };
+
+            dragWords.appendChild(el);
+        });
+    }
 }
 
-/* Carregar próximo exercício */
-function renderExercise() {
-    updateProgress();
+/* =====================================================
+    CHECAR RESPOSTA
+===================================================== */
 
-    if (index >= total) {
+function checkAnswer(userAnswer) {
+    if (answerLocked) return;
+    answerLocked = true;
+
+    let correct = exercicios[indexEx].answer;
+
+    if (userAnswer === correct) {
+        feedback.style.color = "#3cb043";
+        feedback.textContent = "✔ Correto!";
+        mascoteAcerto();
+    } else {
+        feedback.style.color = "#ff5050";
+        feedback.textContent = "✖ Errado — " + correct;
+        mascoteErro();
+    }
+}
+
+function checkWrite() {
+    let user = wInput.value.trim().toLowerCase();
+    let correct = exercicios[indexEx].answer.toLowerCase();
+
+    if (user === correct) {
+        feedback.style.color = "#3cb043";
+        feedback.textContent = "✔ Correto!";
+        mascoteAcerto();
+        answerLocked = true;
+    }
+}
+
+function nextQuestion() {
+    if (!answerLocked && exercicios[indexEx].type !== "write") {
+        alert("Responda antes de continuar!");
+        return;
+    }
+
+    indexEx++;
+
+    if (indexEx >= total) {
         finishLesson();
         return;
     }
 
-    const exercise = LESSONS[index];
-    const block = document.getElementById("lessonBlock");
-
-    if (exercise.type === "choice") {
-        block.innerHTML = `
-            <h3>${exercise.question}</h3>
-            ${exercise.options.map(op => `
-                <button class="btn-main" onclick="checkChoice('${op}', '${exercise.answer}')">
-                    ${op}
-                </button>
-            `).join("")}
-        `;
-    }
-
-    if (exercise.type === "write") {
-        block.innerHTML = `
-            <h3>${exercise.question}</h3>
-            <input id="writeInput" class="input-write" placeholder="Digite aqui...">
-            <button class="btn-main" onclick="checkWrite('${exercise.answer}')">Verificar</button>
-        `;
-    }
-
-    if (exercise.type === "drag") {
-        block.innerHTML = `
-            <h3>${exercise.question}</h3>
-            <div id="dragArea"></div>
-            <div id="dropZone" style="
-                min-height:70px; 
-                border:2px dashed #555; 
-                padding:10px; 
-                border-radius:12px; 
-                margin-top:12px;">
-            </div>
-            <button class="btn-main" onclick="checkDrag('${exercise.answer}')">Verificar</button>
-        `;
-
-        exercise.words.forEach(w => {
-            let bubble = document.createElement("span");
-            bubble.className = "word-bubble";
-            bubble.innerText = w;
-            bubble.draggable = true;
-
-            bubble.ondragstart = e => {
-                e.dataTransfer.setData("text", w);
-            };
-
-            document.getElementById("dragArea").appendChild(bubble);
-        });
-
-        document.getElementById("dropZone").ondragover = e => e.preventDefault();
-        document.getElementById("dropZone").ondrop = e => {
-            e.preventDefault();
-            let w = e.dataTransfer.getData("text");
-            document.getElementById("dropZone").innerHTML += `<span class="word-bubble">${w}</span>`;
-        };
-    }
+    showExercise();
 }
 
-renderExercise();
-
-
-/* ============================================================
-   VERIFICAÇÃO DAS RESPOSTAS
-============================================================ */
-
-function checkChoice(selected, correct) {
-    feedback(selected === correct, correct);
-}
-
-function checkWrite(correct) {
-    let val = document.getElementById("writeInput").value.trim().toLowerCase();
-    feedback(val === correct.toLowerCase(), correct);
-}
-
-function checkDrag(correct) {
-    let dropped = [...document.querySelectorAll("#dropZone .word-bubble")]
-        .map(e => e.innerText)
-        .join(" ");
-
-    feedback(dropped === correct, correct);
-}
-
-
-/* ============================================================
-   FEEDBACK E XP
-============================================================ */
-
-function feedback(ok, correctAnswer) {
-    let block = document.getElementById("lessonBlock");
-
-    if (ok) {
-        block.classList.add("correct-flash");
-
-        SESSION.xp += 10;
-        USERS[SESSION.name] = SESSION;
-        localStorage.setItem("users", JSON.stringify(USERS));
-        localStorage.setItem("session", JSON.stringify(SESSION));
-
-        setTimeout(() => {
-            block.classList.remove("correct-flash");
-            index++;
-            renderExercise();
-        }, 600);
-
-    } else {
-        block.classList.add("error-flash");
-
-        block.innerHTML += `
-            <p style="color:#ff6666; margin-top:10px;">
-                Correto: <b>${correctAnswer}</b>
-            </p>
-        `;
-
-        setTimeout(() => {
-            block.classList.remove("error-flash");
-        }, 600);
-    }
-}
-
-
-/* ============================================================
-   FINAL DA AULA
-============================================================ */
+/* =====================================================
+    FINALIZAR LIÇÃO
+===================================================== */
 
 function finishLesson() {
-    let block = document.getElementById("lessonBlock");
-
-    block.innerHTML = `
-        <h2>🎉 Parabéns!</h2>
-        <p>Você completou a lição!</p>
-        <p>+10 XP ganhos</p>
-        <button class="btn-main" onclick="location.href='index.html'">
-            Voltar ao Início
-        </button>
-    `;
-
-    SESSION.lessonsUnlocked = Math.max(SESSION.lessonsUnlocked, lessonId + 1);
-    USERS[SESSION.name] = SESSION;
-
-    localStorage.setItem("users", JSON.stringify(USERS));
-    localStorage.setItem("session", JSON.stringify(SESSION));
+    completeLesson(lessonId, 20); // dá 20 XP
+    mascoteFala("Parabéns! Lição concluída!");
+    alert("Lição concluída!");
+    location.href = "index.html";
 }
+
+function sair() {
+    logout();
+}
+
+showExercise();
 </script>
 
 </body>
