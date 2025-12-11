@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Aula — EnglishPlay</title>
+  <link rel="icon" href="logo.png">
+  <style>
+    body{margin:0;background:#000;color:#fff;font-family:Inter,Arial,sans-serif}
+    .wrap{max-width:900px;margin:24px auto;padding:18px}
+    .card{background:#0f1113;border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.03)}
+    .btn{padding:8px 12px;border-radius:8px;border:none;background:#f5c518;color:#000;font-weight:800;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <button class="btn" id="backBtn">Voltar</button>
+      <h1 id="lessonTitle">Aula</h1>
+      <div id="lessonContent">Carregando...</div>
+    </div>
+  </div>
+
+  <script>
+    function dbLoad(){ try{ return JSON.parse(localStorage.getItem('englishplay_db_user_v2')) || {}; }catch(e){ return {}; } }
+    function getParam(name){ const p = new URLSearchParams(location.search); return p.get(name); }
+    const id = parseInt(getParam('id')||'0',10);
+    const db = dbLoad();
+    const lesson = db.lessons && db.lessons[id];
+    if(lesson){
+      document.getElementById('lessonTitle').innerText = lesson.title;
+      document.getElementById('lessonContent').innerText = lesson.content;
+    } else {
+      document.getElementById('lessonContent').innerText = 'Aula não encontrada.';
+    }
+    document.getElementById('backBtn').addEventListener('click', ()=> { history.back(); });
+  </script>
+</body>
+</html>
