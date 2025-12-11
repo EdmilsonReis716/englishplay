@@ -1,64 +1,315 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Perfil — EnglishPlay</title><link rel="stylesheet" href="style.css"></head>
-<body class="page">
-<header class="navbar"><div class="nav-left"><img src="logo.png" class="logo-small"/><div class="brand-area"><div class="brand">EnglishPlay</div></div></div></header>
-<main style="max-width:900px;margin:30px auto;padding:18px">
-  <div style="display:grid;grid-template-columns:220px 1fr;gap:20px">
-    <div style="background:var(--card);padding:18px;border-radius:12px;border:2px solid #222">
-      <img id="pfAvatar" src="logo.png" style="width:140px;height:140px;border-radius:50%;display:block;margin:auto;border:4px solid var(--yellow)">
-      <h3 id="pfName" style="text-align:center;margin-top:10px">Usuário</h3>
-      <p id="pfStats" style="text-align:center;color:var(--muted)">—</p>
-      <div style="text-align:center;margin-top:10px">
-        <input id="avatarUrl" placeholder="URL da imagem do avatar"/><button id="saveAvatar" class="btn">Salvar avatar</button>
-      </div>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seu Perfil — EnglishPlay</title>
+
+    <link rel="stylesheet" href="style.css" />
+    <script src="storage.js" defer></script>
+    <script src="script.js" defer></script>
+
+    <style>
+        .profile-container {
+            max-width: 900px;
+            margin: 130px auto;
+            background: #111;
+            padding: 35px;
+            border: 3px solid #ffcc00;
+            border-radius: 20px;
+            animation: fadeIn .5s ease;
+        }
+
+        .pf-mascot {
+            width: 130px;
+            display: block;
+            margin: 0 auto 15px auto;
+            animation: float 2.5s infinite ease-in-out;
+        }
+
+        .pf-title {
+            color: #ffcc00;
+            font-size: 32px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .pf-grid {
+            margin-top: 35px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 25px;
+        }
+
+        .pf-card {
+            background: #0c0c0c;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #333;
+        }
+
+        .pf-avatar {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            margin: 10px auto;
+            display: block;
+            border: 4px solid #ffcc00;
+            object-fit: cover;
+        }
+
+        .pf-stat {
+            text-align: center;
+            font-size: 18px;
+            margin-top: 10px;
+            color: #ccc;
+        }
+
+        .pf-box label {
+            font-weight: 600;
+            display: block;
+            margin-top: 15px;
+        }
+
+        .pf-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            color: white;
+            margin-top: 5px;
+        }
+
+        .friend-item {
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid #333;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<header class="navbar">
+    <div class="navbar-left">
+        <img src="logo.png" class="nav-logo" />
+        <span class="nav-title">EnglishPlay</span>
     </div>
-    <div style="background:var(--card);padding:18px;border-radius:12px;border:2px solid #222">
-      <h2>Editar Perfil</h2>
-      <label>Nome (até 3 vezes)</label>
-      <input id="editName"/>
-      <div style="margin-top:12px">
-        <button id="saveName" class="btn">Salvar</button>
-        <button id="backHome2" class="btn ghost">Voltar</button>
-      </div>
-      <hr style="margin:14px 0;border-color:#222"/>
-      <h3>Amigos</h3>
-      <div id="friendsList"></div>
-      <h4>Pedidos</h4>
-      <div id="requestsList"></div>
+
+    <div class="navbar-right">
+        <button onclick="window.location.href='index.html'" class="btn-logout">Voltar</button>
+        <button onclick="logout()" class="btn-logout">Sair</button>
     </div>
-  </div>
-</main>
+</header>
+
+
+<div class="profile-container">
+
+    <img src="logo.png" class="pf-mascot">
+
+    <h1 class="pf-title">Seu Perfil</h1>
+
+    <div class="pf-grid">
+
+        <!-- LADO ESQUERDO -->
+        <div class="pf-card">
+
+            <img id="pfAvatar" class="pf-avatar">
+
+            <h2 id="pfName" style="text-align:center; margin-top:10px;"></h2>
+
+            <p class="pf-stat">🔥 <span id="pfStreak"></span> dias</p>
+            <p class="pf-stat">⭐ <span id="pfXp"></span> XP</p>
+
+            <hr style="margin: 20px 0; border-color: #333;">
+
+            <div class="pf-box">
+                <label>Mudar avatar (URL):</label>
+                <input id="newAvatar" class="pf-input" placeholder="https://...">
+                <button class="btn-main" onclick="saveAvatar()">Salvar Avatar</button>
+
+                <label>Mudar nome (até 3 vezes):</label>
+                <input id="newName" class="pf-input" placeholder="Novo nome">
+                <button class="btn-main" onclick="saveName()">Salvar Nome</button>
+            </div>
+
+        </div>
+
+
+        <!-- LADO DIREITO -->
+        <div class="pf-card">
+
+            <h2 style="color:#ffcc00; text-align:center;">Amigos</h2>
+
+            <div id="friendList"></div>
+
+            <hr style="margin: 20px 0; border-color: #333;">
+
+            <h2 style="color:#ffcc00; text-align:center;">Pedidos de Amizade</h2>
+
+            <div id="requestList"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
 <script>
-function dbLoad(){ try{ return JSON.parse(localStorage.getItem('englishplay_db')) || { users:[] }; } catch { return { users:[] }; } }
-function dbSave(db){ localStorage.setItem('englishplay_db', JSON.stringify(db)); }
-function sessionLoad(){ try{ return JSON.parse(localStorage.getItem('englishplay_session')); } catch { return null } }
-function sessionSave(s){ localStorage.setItem('englishplay_session', JSON.stringify(s)); }
-let DB = dbLoad(); let s = sessionLoad();
-if(!s) return location.href='index.html';
-document.getElementById('pfName').textContent = s.username;
-document.getElementById('pfStats').innerHTML = `🔥 ${s.streak||0} dias<br>⭐ ${s.xp||0} XP`;
-if(s.avatar) document.getElementById('pfAvatar').src = s.avatar;
-document.getElementById('saveAvatar').onclick = ()=>{
-  const url = document.getElementById('avatarUrl').value.trim(); if(!url) return alert('URL vazia');
-  s.avatar = url; sessionSave(s); const i = DB.users.findIndex(u=>u.id===s.id); if(i>=0) DB.users[i]=s; dbSave(DB); alert('Avatar salvo'); location.reload();
+/* ===============================
+   CARREGAR PERFIL
+================================*/
+
+let user = JSON.parse(localStorage.getItem("currentUser"));
+let allUsers = JSON.parse(localStorage.getItem("users")) || {};
+
+if (!user) window.location.href = "auth.html";
+
+document.getElementById("pfAvatar").src = user.avatar || "logo.png";
+document.getElementById("pfName").innerText = user.name;
+document.getElementById("pfStreak").innerText = user.streak || 0;
+document.getElementById("pfXp").innerText = user.xp || 0;
+
+
+/* ===============================
+   SALVAR AVATAR
+================================*/
+
+function saveAvatar() {
+    const url = document.getElementById("newAvatar").value.trim();
+    if (!url) return alert("URL inválida!");
+
+    user.avatar = url;
+    updateUser();
 }
-let nameChanges = s.nameChanges || 0;
-document.getElementById('saveName').onclick = ()=>{
-  if(nameChanges>=3) return alert('Limite de alteração de nome atingido');
-  const newName = document.getElementById('editName').value.trim();
-  if(!newName) return;
-  s.username = newName; nameChanges++; s.nameChanges = nameChanges; sessionSave(s); const i = DB.users.findIndex(u=>u.id===s.id); if(i>=0) DB.users[i]=s; dbSave(DB); alert('Nome salvo'); location.reload();
+
+
+/* ===============================
+   MUDAR NOME (até 3 vezes)
+================================*/
+
+function saveName() {
+    let novo = document.getElementById("newName").value.trim();
+    if (!novo) return alert("Nome inválido!");
+
+    user.nameChanges = user.nameChanges || 0;
+
+    if (user.nameChanges >= 3)
+        return alert("Você atingiu o limite de troca de nome!");
+
+    if (allUsers[novo])
+        return alert("Este nome já está em uso!");
+
+    // Registrar troca
+    allUsers[user.name] = null;
+    delete allUsers[user.name];
+
+    user.name = novo;
+    user.nameChanges++;
+
+    allUsers[novo] = user;
+
+    localStorage.setItem("users", JSON.stringify(allUsers));
+    localStorage.setItem("currentUser", JSON.stringify(user));
+
+    alert("Nome atualizado!");
+    location.reload();
 }
-document.getElementById('backHome2').onclick = ()=> location.href='index.html';
-function renderFriends(){
-  const fl = document.getElementById('friendsList'); fl.innerHTML = '';
-  (s.friends||[]).forEach(f=> fl.innerHTML += `<div style="padding:8px;border-bottom:1px solid #222">${f}</div>`);
-  const rl = document.getElementById('requestsList'); rl.innerHTML = '';
-  (s.requests||[]).forEach(r=> rl.innerHTML += `<div style="padding:8px;border-bottom:1px solid #222">${r} <button class="btn ghost" onclick="accept('${r}')">Aceitar</button></div>`);
+
+
+/* ===============================
+   LISTAR AMIGOS
+================================*/
+
+function renderFriends() {
+    const fl = document.getElementById("friendList");
+    fl.innerHTML = "";
+
+    const arr = user.friends || [];
+
+    if (arr.length === 0) {
+        fl.innerHTML = "<p>Você não tem amigos ainda.</p>";
+        return;
+    }
+
+    arr.forEach(f => {
+        fl.innerHTML += `
+            <div class="friend-item">
+                ${f}
+            </div>
+        `;
+    });
 }
-window.accept = (r)=>{ s.requests = s.requests.filter(x=>x!==r); s.friends = [...(s.friends||[]), r]; const i = DB.users.findIndex(u=>u.id===s.id); DB.users[i]=s; const other = DB.users.find(u=>u.username===r); if(other){ other.friends = [...(other.friends||[]), s.username]; } dbSave(DB); sessionSave(s); renderFriends(); alert('Amizade aceita') }
+
+
+/* ===============================
+   LISTAR PEDIDOS
+================================*/
+
+function renderRequests() {
+    const rl = document.getElementById("requestList");
+    rl.innerHTML = "";
+
+    const arr = user.requests || [];
+
+    if (arr.length === 0) {
+        rl.innerHTML = "<p>Nenhum pedido pendente.</p>";
+        return;
+    }
+
+    arr.forEach(r => {
+        rl.innerHTML += `
+            <div class="friend-item">
+                ${r}
+                <button class="btn-main" onclick="acceptFriend('${r}')">Aceitar</button>
+            </div>
+        `;
+    });
+}
+
+
+/* ===============================
+   ACEITAR AMIZADE
+================================*/
+
+function acceptFriend(name) {
+    user.requests = user.requests.filter(n => n !== name);
+    user.friends = user.friends || [];
+    user.friends.push(name);
+
+    allUsers[name].friends = allUsers[name].friends || [];
+    allUsers[name].friends.push(user.name);
+
+    updateUser();
+    alert("Agora vocês são amigos!");
+
+    renderFriends();
+    renderRequests();
+}
+
+
+/* ===============================
+   SALVAR USUÁRIO
+================================*/
+
+function updateUser() {
+    allUsers[user.name] = user;
+
+    localStorage.setItem("users", JSON.stringify(allUsers));
+    localStorage.setItem("currentUser", JSON.stringify(user));
+}
+
+
+/* ===============================
+   INICIAR RENDERIZAÇÃO
+================================*/
+
 renderFriends();
+renderRequests();
+
 </script>
+
 </body>
 </html>
