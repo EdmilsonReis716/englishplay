@@ -1,323 +1,246 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aula — EnglishPlay</title>
 
     <link rel="stylesheet" href="style.css">
-    <script src="storage.js" defer></script>
     <script src="lessons.js" defer></script>
-    <script src="mascotes.js" defer></script>
-
-    <style>
-        .lesson-container {
-            max-width: 900px;
-            margin: 140px auto;
-            padding: 30px;
-            background: #111;
-            border-radius: 25px;
-            border: 3px solid #ffcc00;
-            animation: fadeIn .4s ease;
-        }
-
-        .lesson-title {
-            font-size: 30px;
-            font-weight: 700;
-            color: #ffcc00;
-            margin-bottom: 20px;
-        }
-
-        .lesson-block {
-            background: #0c0c0c;
-            padding: 25px;
-            border-radius: 20px;
-            border: 2px solid #333;
-        }
-
-        .mascot-lesson {
-            width: 110px;
-            margin: 0 auto 15px auto;
-            display: block;
-            animation: float 2s infinite ease-in-out;
-        }
-
-        #dragArea .word {
-            display: inline-block;
-            background: #ffcc00;
-            color: black;
-            padding: 10px 15px;
-            border-radius: 25px;
-            margin: 8px;
-            font-weight: 600;
-            cursor: grab;
-            transition: transform .2s ease;
-        }
-
-        #dragArea .word:hover {
-            transform: scale(1.1);
-        }
-
-        #dropZone {
-            margin-top: 20px;
-            min-height: 70px;
-            padding: 15px;
-            border: 2px dashed #555;
-            border-radius: 15px;
-        }
-
-        .option-btn {
-            width: 100%;
-            padding: 15px;
-            margin-top: 10px;
-            border-radius: 15px;
-            background: #1a1a1a;
-            color: white;
-            font-weight: 600;
-            border: 2px solid #333;
-            cursor: pointer;
-            transition: .2s;
-        }
-
-        .option-btn:hover {
-            border-color: #ffcc00;
-            transform: scale(1.03);
-        }
-
-        .input-write {
-            width: 100%;
-            padding: 12px;
-            margin-top: 12px;
-            border-radius: 12px;
-            border: 2px solid #333;
-            background: #1a1a1a;
-            color: white;
-        }
-
-        .progress-bar {
-            height: 14px;
-            width: 100%;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #222;
-            margin-bottom: 20px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(to right, #ffcc00, #ffe680);
-            transition: .4s ease;
-        }
-
-        .finish-box {
-            text-align: center;
-            padding: 20px;
-            background: #0c0c0c;
-            border-radius: 20px;
-            margin-top: 20px;
-            border: 2px solid #333;
-        }
-    </style>
 </head>
-
 <body>
 
+<!-- NAVBAR -->
 <header class="navbar">
-    <div class="navbar-left">
-        <img src="logo.png" class="nav-logo" />
+    <div class="nav-logo" onclick="location.href='index.html'">
+        <img src="logo.png">
         <span class="nav-title">EnglishPlay</span>
     </div>
 
-    <div class="navbar-right">
-        <button class="btn-logout" onclick="window.location.href='index.html'">Voltar</button>
-        <button class="btn-logout" onclick="logout()">Sair</button>
-    </div>
+    <input type="text" class="search-box" placeholder="Pesquisar..." disabled>
+
+    <div class="nav-user" onclick="logout()">Sair</div>
 </header>
 
+<!-- CONTEÚDO DA AULA -->
+<div class="main" style="justify-content:center; margin-top:130px;">
+    <div class="section-box" style="width:700px;">
 
-<div class="lesson-container">
+        <h2 id="lessonTitle" class="section-title">Carregando...</h2>
 
-    <img src="logo.png" class="mascot-lesson">
+        <!-- Barra de progresso -->
+        <div class="progress-bar" style="
+            width:100%; 
+            background:#222; 
+            height:12px; 
+            border-radius:10px; 
+            margin:20px 0;
+        ">
+            <div id="progressFill" style="
+                width:0%; 
+                height:100%; 
+                border-radius:10px; 
+                background:linear-gradient(to right, #ffcc00, #ffee88);
+                transition:0.4s ease;
+            "></div>
+        </div>
 
-    <h1 class="lesson-title" id="lessonTitle">Carregando...</h1>
+        <!-- CAIXA DA AULA -->
+        <div id="lessonBlock" class="lesson-block">
+            Carregando exercícios...
+        </div>
 
-    <div class="progress-bar">
-        <div class="progress-fill" id="progressFill"></div>
     </div>
-
-    <div id="lessonBlock" class="lesson-block">
-        Carregando exercício...
-    </div>
-
 </div>
 
 
 <script>
-/* =======================================================
-   CARREGAR A AULA
-======================================================= */
+/* ============================================================
+   CARREGAR SESSÃO E USUÁRIO
+============================================================ */
 
-let currentUser = JSON.parse(localStorage.getItem("currentUser"));
-let allUsers = JSON.parse(localStorage.getItem("users")) || {};
+let SESSION = JSON.parse(localStorage.getItem("session"));
+let USERS = JSON.parse(localStorage.getItem("users")) || {};
+
+if (!SESSION) {
+    alert("Você precisa estar logado!");
+    window.location.href = "auth.html";
+}
 
 const params = new URLSearchParams(window.location.search);
 const lessonId = Number(params.get("id"));
 
-if (!currentUser) window.location.href = "auth.html";
+if (!lessonId) {
+    alert("Aula inválida.");
+    window.location.href = "index.html";
+}
 
-document.getElementById("lessonTitle").innerText = `Lição ${lessonId}`;
+document.getElementById("lessonTitle").innerText = "Lição " + lessonId;
 
-/* PROGRESSO DA AULA (5 exercícios) */
+
+/* ============================================================
+   SISTEMA DE AULA (5 exercícios)
+============================================================ */
+
 let index = 0;
 const total = 5;
 
+/* Atualizar barra de progresso */
 function updateProgress() {
-    document.getElementById("progressFill").style.width = `${(index / total) * 100}%`;
+    document.getElementById("progressFill").style.width = (index / total * 100) + "%";
 }
 
-/* =======================================================
-   RENDERIZAR EXERCÍCIOS
-======================================================= */
-
+/* Carregar próximo exercício */
 function renderExercise() {
     updateProgress();
 
-    if (index >= total) return finishLesson();
+    if (index >= total) {
+        finishLesson();
+        return;
+    }
 
+    const exercise = LESSONS[index];
     const block = document.getElementById("lessonBlock");
-    const exercise = LESSON_BANK[index]; // vem de lessons.js
 
     if (exercise.type === "choice") {
         block.innerHTML = `
-            <h2>${exercise.question}</h2>
-            ${exercise.options.map(o =>
-                `<button class="option-btn" onclick="checkChoice('${o}', '${exercise.answer}')">${o}</button>`
-            ).join("")}
+            <h3>${exercise.question}</h3>
+            ${exercise.options.map(op => `
+                <button class="btn-main" onclick="checkChoice('${op}', '${exercise.answer}')">
+                    ${op}
+                </button>
+            `).join("")}
         `;
     }
 
     if (exercise.type === "write") {
         block.innerHTML = `
-            <h2>${exercise.question}</h2>
-            <input id="writeInput" class="input-write" placeholder="Digite sua resposta...">
+            <h3>${exercise.question}</h3>
+            <input id="writeInput" class="input-write" placeholder="Digite aqui...">
             <button class="btn-main" onclick="checkWrite('${exercise.answer}')">Verificar</button>
         `;
     }
 
     if (exercise.type === "drag") {
         block.innerHTML = `
-            <h2>${exercise.question}</h2>
+            <h3>${exercise.question}</h3>
             <div id="dragArea"></div>
-            <div id="dropZone"></div>
+            <div id="dropZone" style="
+                min-height:70px; 
+                border:2px dashed #555; 
+                padding:10px; 
+                border-radius:12px; 
+                margin-top:12px;">
+            </div>
             <button class="btn-main" onclick="checkDrag('${exercise.answer}')">Verificar</button>
         `;
 
         exercise.words.forEach(w => {
-            const bubble = document.createElement("span");
-            bubble.className = "word";
+            let bubble = document.createElement("span");
+            bubble.className = "word-bubble";
             bubble.innerText = w;
             bubble.draggable = true;
 
-            bubble.ondragstart = e => e.dataTransfer.setData("text", w);
+            bubble.ondragstart = e => {
+                e.dataTransfer.setData("text", w);
+            };
+
             document.getElementById("dragArea").appendChild(bubble);
         });
 
-        const dz = document.getElementById("dropZone");
-        dz.ondragover = e => e.preventDefault();
-        dz.ondrop = e => {
+        document.getElementById("dropZone").ondragover = e => e.preventDefault();
+        document.getElementById("dropZone").ondrop = e => {
             e.preventDefault();
-            const w = e.dataTransfer.getData("text");
-            dz.innerHTML += `<span class="word">${w}</span>`;
+            let w = e.dataTransfer.getData("text");
+            document.getElementById("dropZone").innerHTML += `<span class="word-bubble">${w}</span>`;
         };
     }
 }
 
-/* =======================================================
-   VERIFICAÇÕES
-======================================================= */
+renderExercise();
 
-function checkChoice(sel, correct) {
-    feedback(sel === correct, correct);
+
+/* ============================================================
+   VERIFICAÇÃO DAS RESPOSTAS
+============================================================ */
+
+function checkChoice(selected, correct) {
+    feedback(selected === correct, correct);
 }
 
 function checkWrite(correct) {
-    let v = document.getElementById("writeInput").value.trim().toLowerCase();
-    feedback(v === correct.toLowerCase(), correct);
+    let val = document.getElementById("writeInput").value.trim().toLowerCase();
+    feedback(val === correct.toLowerCase(), correct);
 }
 
 function checkDrag(correct) {
-    const words = [...document.querySelectorAll("#dropZone .word")].map(w => w.innerText);
-    const phrase = words.join(" ").trim();
+    let dropped = [...document.querySelectorAll("#dropZone .word-bubble")]
+        .map(e => e.innerText)
+        .join(" ");
 
-    feedback(phrase === correct, correct);
+    feedback(dropped === correct, correct);
 }
 
-/* =======================================================
-   FEEDBACK FINAL
-======================================================= */
 
-function feedback(isCorrect, correctAnswer) {
-    const block = document.getElementById("lessonBlock");
+/* ============================================================
+   FEEDBACK E XP
+============================================================ */
 
-    if (isCorrect) {
-        mascoteFala("Muito bem! Continue assim!");
+function feedback(ok, correctAnswer) {
+    let block = document.getElementById("lessonBlock");
+
+    if (ok) {
         block.classList.add("correct-flash");
 
-        // XP
-        currentUser.xp += 10;
-        allUsers[currentUser.name] = currentUser;
-
-        localStorage.setItem("currentUser", JSON.stringify(currentUser));
-        localStorage.setItem("users", JSON.stringify(allUsers));
+        SESSION.xp += 10;
+        USERS[SESSION.name] = SESSION;
+        localStorage.setItem("users", JSON.stringify(USERS));
+        localStorage.setItem("session", JSON.stringify(SESSION));
 
         setTimeout(() => {
             block.classList.remove("correct-flash");
             index++;
             renderExercise();
-        }, 700);
+        }, 600);
 
     } else {
-        mascoteFala("Ops! Vamos melhorar!");
         block.classList.add("error-flash");
 
         block.innerHTML += `
-            <p style="color:#ff5757; margin-top:10px;">
-                Correção: <b>${correctAnswer}</b>
+            <p style="color:#ff6666; margin-top:10px;">
+                Correto: <b>${correctAnswer}</b>
             </p>
         `;
 
         setTimeout(() => {
             block.classList.remove("error-flash");
-        }, 700);
+        }, 600);
     }
 }
 
-/* =======================================================
-   FINALIZAR AULA
-======================================================= */
+
+/* ============================================================
+   FINAL DA AULA
+============================================================ */
 
 function finishLesson() {
-    const block = document.getElementById("lessonBlock");
+    let block = document.getElementById("lessonBlock");
 
     block.innerHTML = `
-        <div class="finish-box">
-            <h2>🎉 Parabéns!</h2>
-            <p>Você finalizou a aula e ganhou +10 XP!</p>
-            <button class="btn-main" onclick="window.location.href='index.html'">Voltar ao Início</button>
-        </div>
+        <h2>🎉 Parabéns!</h2>
+        <p>Você completou a lição!</p>
+        <p>+10 XP ganhos</p>
+        <button class="btn-main" onclick="location.href='index.html'">
+            Voltar ao Início
+        </button>
     `;
 
-    // Desbloquear próxima lição
-    currentUser.lessonsUnlocked = Math.max(currentUser.lessonsUnlocked, lessonId + 1);
-    allUsers[currentUser.name] = currentUser;
+    SESSION.lessonsUnlocked = Math.max(SESSION.lessonsUnlocked, lessonId + 1);
+    USERS[SESSION.name] = SESSION;
 
-    localStorage.setItem("currentUser", JSON.stringify(currentUser));
-    localStorage.setItem("users", JSON.stringify(allUsers));
+    localStorage.setItem("users", JSON.stringify(USERS));
+    localStorage.setItem("session", JSON.stringify(SESSION));
 }
-
-/* iniciar */
-renderExercise();
 </script>
 
 </body>
