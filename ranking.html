@@ -1,50 +1,133 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ranking — EnglishPlay</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking — EnglishPlay</title>
+
+    <link rel="stylesheet" href="estilo.css">
+
+    <style>
+        .rank-container {
+            width: 700px;
+            margin: 140px auto;
+            background: #111;
+            border: 3px solid #ffcc00;
+            border-radius: 20px;
+            padding: 25px;
+        }
+
+        .rank-title {
+            font-size: 30px;
+            font-weight: 700;
+            color: #ffcc00;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .user-rank {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            margin-bottom: 12px;
+            padding: 14px;
+            display: flex;
+            justify-content: space-between;
+            border-radius: 14px;
+            font-size: 18px;
+            transition: .25s;
+        }
+
+        .user-rank:hover {
+            transform: scale(1.03);
+            border-color: #ffcc00;
+        }
+
+        .medal {
+            font-size: 22px;
+            margin-right: 8px;
+        }
+
+        .me {
+            border-color: #ffcc00 !important;
+            background: #222 !important;
+        }
+    </style>
 </head>
 <body>
 
-<header class="navbar">
-  <div class="nav-logo" onclick="location.href='index.html'"><img src="logo.png"><span class="nav-title">EnglishPlay</span></div>
-  <input class="search-box" placeholder="Pesquisar..." disabled>
-  <div class="nav-user" onclick="logout()">Sair</div>
-</header>
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="nav-left" onclick="location.href='index.html'">
+        <img src="logo.png">
+        <div class="nav-title">EnglishPlay</div>
+    </div>
 
-<div class="main" style="margin-top:130px; justify-content:center;">
-  <div class="section-box" style="width:760px;">
-    <h2 class="section-title">🏆 Ranking</h2>
-    <div id="rankingList">Carregando ranking...</div>
-  </div>
+    <input type="text" disabled class="search-box" placeholder="Ranking">
+
+    <button class="btn-yellow" onclick="logout()">Sair</button>
 </div>
 
+<div class="rank-container">
+    <div class="rank-title">🏆 Ranking Global</div>
+
+    <div id="rankList"></div>
+</div>
+
+<script src="storage.js"></script>
+<script src="mascotes.js"></script>
+
 <script>
-const USERS = JSON.parse(localStorage.getItem("users")) || {};
-let SESSION = JSON.parse(localStorage.getItem("session")) || null;
-if(!SESSION) location.href='auth.html';
+/* ============================================================
+   CARREGAR DADOS DO RANKING
+============================================================ */
 
-function renderRanking(){
-  const arr = Object.values(USERS).sort((a,b)=> (b.xp||0) - (a.xp||0)).slice(0,50);
-  const el = document.getElementById("rankingList");
-  if(!arr.length){ el.innerHTML = "<p>Nenhum usuário registrado ainda.</p>"; return; }
-  el.innerHTML = arr.map((u,i)=> `
-    <div style="display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid #222">
-        <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;border:3px solid #ffcc00">
-            <img src="${u.avatar||'logo.png'}" style="width:100%;height:100%;object-fit:cover"/>
-        </div>
-        <div style="flex:1">
-          <b>#${i+1} ${u.name}</b><br/>
-          <small style="opacity:.8">${(u.xp||0)} XP • ${u.streak||0} dias</small>
-        </div>
-        <div style="width:110px;text-align:right;color:#ffcc00">${(u.xp||0)} XP</div>
-    </div>
-  `).join("");
+let me = getLoggedUser();
+if (!me) location.href = "auth.html";
+
+let ranking = getRanking();
+
+/* ============================================================
+   GERAR LISTA
+============================================================ */
+
+let list = document.getElementById("rankList");
+
+ranking.forEach((user, index) => {
+    let medal = "";
+
+    if (index === 0) medal = "🥇 ";
+    else if (index === 1) medal = "🥈 ";
+    else if (index === 2) medal = "🥉 ";
+
+    let div = document.createElement("div");
+    div.className = "user-rank";
+
+    if (user.name === me) div.classList.add("me");
+
+    div.innerHTML = `
+        <span>${medal}${index + 1}. ${user.name}</span>
+        <span>${user.xp} XP</span>
+    `;
+
+    list.appendChild(div);
+});
+
+/* ============================================================
+   REAÇÃO DO MASCOTE AO RANKING
+============================================================ */
+
+setTimeout(() => {
+    let pos = ranking.findIndex(u => u.name === me) + 1;
+
+    if (pos === 1) mascoteFala("Você está em primeiro! Incrível! 🥇");
+    else if (pos <= 5) mascoteFala("Top 5! Você está indo muito bem! ⭐");
+    else mascoteFala("Continue treinando, você sobe no ranking!");
+}, 800);
+
+function logout() {
+    localStorage.removeItem("englishplay_logged_user");
+    location.href = "auth.html";
 }
-
-document.addEventListener("DOMContentLoaded", renderRanking);
 </script>
 
 </body>
